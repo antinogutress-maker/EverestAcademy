@@ -12,6 +12,8 @@
             --glass-bg: rgba(255, 255, 255, 0.07);
             --glass-border: rgba(255, 255, 255, 0.12);
             --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --test-red: rgba(239, 68, 68, 0.25);
+            --test-red-border: rgba(239, 68, 68, 0.5);
         }
 
         body {
@@ -32,10 +34,19 @@
             box-shadow: var(--glass-shadow);
         }
 
+        .glass-red {
+            background: var(--test-red);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 2px solid var(--test-red-border);
+            border-radius: 28px;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+        }
+
         /* Animated School Name */
-        @keyframes hueCycle {
-            0% { filter: hue-rotate(0deg); }
-            100% { filter: hue-rotate(360deg); }
+        @keyframes float {
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
         }
 
         .school-name span {
@@ -46,11 +57,6 @@
         .everest { color: #ff5e62; text-shadow: 0 0 15px rgba(255,94,98,0.4); }
         .academy { color: #00f2fe; text-shadow: 0 0 15px rgba(0,242,254,0.4); }
         .school { color: #f9d423; text-shadow: 0 0 15px rgba(249,212,35,0.4); }
-
-        @keyframes float {
-            from { transform: translateY(0); }
-            to { transform: translateY(-5px); }
-        }
 
         /* Slogan Animation */
         .slogan-text {
@@ -65,7 +71,6 @@
             to { background-position: 300% center; }
         }
 
-        /* Image Frame Effects */
         .photo-frame {
             position: relative;
             padding: 10px;
@@ -83,13 +88,16 @@
 
         .view-hidden { display: none; }
 
-        /* Button Press Effect */
         .btn-tap {
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .btn-tap:active {
-            transform: scale(0.96);
-            background: rgba(255,255,255,0.15);
+            transform: scale(0.94);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -127,25 +135,41 @@
             <!-- Class Identifier -->
             <div class="text-center">
                 <h2 class="text-red-500 font-black text-3xl italic tracking-tighter drop-shadow-lg">
-                    SCIENCE   CLASS  5
+                    SCIENCE CLASS 5
                 </h2>
             </div>
 
             <!-- Main Categories -->
-            <div class="grid gap-4 pt-2">
-                <button onclick="openCategory('1', 'Scientific Learning')" class="glass p-6 text-xl font-bold flex items-center justify-between btn-tap group">
-                    <span class="group-hover:translate-x-1 transition-transform">Scientific Learning</span>
-                    <div class="bg-blue-500/20 p-2 rounded-xl">
-                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                </button>
+            <div class="space-y-5 pt-2">
+                
+                <!-- Chapter 1 Row -->
+                <div class="flex gap-3">
+                    <button onclick="openCategory('1', 'Scientific Learning')" class="glass p-5 flex-1 text-left btn-tap group">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">Chapter 01</span>
+                            <span class="text-lg font-bold group-hover:translate-x-1 transition-transform leading-tight">Scientific Learning</span>
+                        </div>
+                    </button>
+                    <a href="1/Test.html" class="glass-red w-32 flex flex-col items-center justify-center btn-tap group text-center no-underline text-white">
+                        <svg class="w-7 h-7 text-red-500 mb-1 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        <span class="text-[10px] font-black uppercase tracking-tighter text-red-100">Chapter Wise<br>Test</span>
+                    </a>
+                </div>
 
-                <button onclick="openCategory('2', 'Measurement')" class="glass p-6 text-xl font-bold flex items-center justify-between btn-tap group">
-                    <span class="group-hover:translate-x-1 transition-transform">Measurement</span>
-                    <div class="bg-purple-500/20 p-2 rounded-xl">
-                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    </div>
-                </button>
+                <!-- Chapter 2 Row -->
+                <div class="flex gap-3">
+                    <button onclick="openCategory('2', 'Measurement')" class="glass p-5 flex-1 text-left btn-tap group">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">Chapter 02</span>
+                            <span class="text-lg font-bold group-hover:translate-x-1 transition-transform leading-tight">Measurement</span>
+                        </div>
+                    </button>
+                    <a href="2/Test.html" class="glass-red w-32 flex flex-col items-center justify-center btn-tap group text-center no-underline text-white">
+                        <svg class="w-7 h-7 text-red-500 mb-1 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        <span class="text-[10px] font-black uppercase tracking-tighter text-red-100">Chapter Wise<br>Test</span>
+                    </a>
+                </div>
+
             </div>
         </div>
 
@@ -192,7 +216,6 @@
             
             topics.forEach((topic, index) => {
                 const link = document.createElement('a');
-                // Creating filename exactly as requested: Name + .html
                 link.href = `${id}/${topic}.html`;
                 link.className = `glass p-5 flex items-center justify-between no-underline text-white btn-tap opacity-0 translate-y-4`;
                 link.style.animation = `slideUp 0.4s ease forwards ${index * 0.1}s`;
@@ -202,7 +225,7 @@
                         <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center font-black text-sm text-blue-300">
                             0${index + 1}
                         </div>
-                        <span class="font-semibold text-lg">${topic}</span>
+                        <span class="font-semibold text-lg leading-tight">${topic}</span>
                     </div>
                     <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
                 `;
@@ -220,12 +243,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
-
-    <style>
-        @keyframes slideUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
 </body>
 </html>
 
