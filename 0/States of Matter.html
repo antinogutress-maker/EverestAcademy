@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>States of Matter Simulation</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the simulation container */
+        .simulation-container {
+            border: 2px solid #3b82f6;
+            background-color: #f7f9fd;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        /* Style for the canvas to ensure it scales correctly */
+        canvas {
+            display: block;
+            touch-action: none; /* Helps with touch interactions */
+        }
+        /* Custom animation for the gas particles */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        #simulationCanvas {
+            animation: fade-in 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="w-full max-w-4xl bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+        <h1 class="text-3xl font-extrabold text-blue-800 mb-2 text-center">
+            States of Matter Interactive Simulator
+        </h1>
+        <p class="text-center text-gray-600 mb-6">
+            Observe the particle behavior that defines Solids, Liquids, and Gases.
+        </p>
+
+        <!-- Control Buttons -->
+        <div class="flex flex-wrap justify-center gap-3 mb-6">
+            <button id="solidBtn" data-state="solid" class="state-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-full transition duration-300 shadow-md transform hover:scale-105">
+                🧊 Solid
+            </button>
+            <button id="liquidBtn" data-state="liquid" class="state-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full transition duration-300 shadow-md transform hover:scale-105">
+                💧 Liquid
+            </button>
+            <button id="gasBtn" data-state="gas" class="state-btn bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-full transition duration-300 shadow-md transform hover:scale-105">
+                💨 Gas
+            </button>
+        </div>
+
+        <!-- Simulation Area -->
+        <div class="simulation-container">
+            <canvas id="simulationCanvas"></canvas>
+        </div>
+
+        <!-- Description Area -->
+        <div id="description" class="mt-6 p-4 bg-gray-100 rounded-lg text-gray-700">
+            <h2 class="text-xl font-bold mb-2 text-blue-700">Select a state to begin.</h2>
+            <p>Click on one of the buttons above to visualize how particles behave in that specific state of matter.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTS AND INITIALIZATION ---
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        const descriptionDiv = document.getElementById('description');
+        // INCREASED particleCount from 60 to 120
+        const particleCount = 120;
+        let particles = [];
+        let currentState = 'none';
+        let animationFrameId = null;
+        let containerHeightRatio = 0.5; // Controls the "fill" level for liquids
+
+        // Base particle properties
+        const PARTICLE_RADIUS = 3;
+        const PARTICLE_COLOR = '#3b82f6';
+
+        // --- PARTICLE CLASS ---
+        class Particle {
+            constructor(x, y, vx, vy, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color || PARTICLE_COLOR;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, PARTICLE_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        // --- UTILITY FUNCTIONS ---
+
+        function resizeCanvas() {
+            // Set canvas size based on container size and aspect ratio
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            // Maintain a square-like aspect ratio for the simulation area
+            canvas.height = Math.min(600, container.clientWidth * 0.75);
+            if (currentState !== 'none') {
+                resetSimulation(currentState);
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function stopAnimation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
+        /**
+         * The exponential backoff function for the API call.
+         * Note: API calls are not used in this specific simulation, but this structure
+         * is kept for completeness if future features require it.
+         */
+        async function fetchWithRetry(url, options, maxRetries = 3, delay = 1000) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === maxRetries - 1) {
+                        throw error;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay * (2 ** i)));
+                }
+            }
+        }
+
+        // --- SIMULATION LOGIC ---
+
+        function initParticles(state) {
+            particles = [];
+            const w = canvas.width;
+            const h = canvas.height;
+            const PADDING = 10;
+            // Calculate particles per row for the solid state (sqrt of total particles for a roughly square arrangement)
+            const particlesPerRow = Math.ceil(Math.sqrt(particleCount * 0.8));
+            const spacing = 1.5 * PARTICLE_RADIUS * 2;
+
+
+            for (let i = 0; i < particleCount; i++) {
+                let x, y, vx, vy, color = PARTICLE_COLOR;
+
+                if (state === 'solid') {
+                    // Particles locked in a grid structure
+                    const row = Math.floor(i / particlesPerRow);
+                    const col = i % particlesPerRow;
+                    
+
+                    x = PADDING + (col * spacing);
+                    y = PADDING + (row * spacing);
+                    // Minimal vibration (very slow, random movement)
+                    vx = (Math.random() - 0.5) * 0.1;
+                    vy = (Math.random() - 0.5) * 0.1;
+
+                } else if (state === 'liquid') {
+                    // Particles initialized in the bottom half of the container
+                    const fillHeight = h * containerHeightRatio;
+                    x = PADDING + Math.random() * (w - 2 * PADDING);
+                    y = h - fillHeight + Math.random() * (fillHeight - 2 * PADDING);
+                    // Medium speed
+                    vx = (Math.random() - 0.5) * 1;
+                    vy = (Math.random() - 0.5) * 1;
+
+                } else if (state === 'gas') {
+                    // Particles initialized anywhere, high speed
+                    x = PADDING + Math.random() * (w - 2 * PADDING);
+                    y = PADDING + Math.random() * (h - 2 * PADDING);
+                    // High speed
+                    vx = (Math.random() - 0.5) * 2;
+                    vy = (Math.random() - 0.5) * 2;
+                }
+
+                particles.push(new Particle(x, y, vx, vy, color));
+            }
+        }
+
+        // --- UPDATE FUNCTIONS FOR EACH STATE ---
+
+        function updateSolid() {
+            const PADDING = 10;
+            const spacing = 1.5 * PARTICLE_RADIUS * 2;
+            const particlesPerRow = Math.ceil(Math.sqrt(particleCount * 0.8));
+
+            particles.forEach((p, i) => {
+                const row = Math.floor(i / particlesPerRow);
+                const col = i % particlesPerRow;
+                const targetX = PADDING + (col * spacing);
+                const targetY = PADDING + (row * spacing);
+
+                // Vibration: particles slightly oscillate around their fixed grid point
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Simple attraction back to the fixed point (simulating strong intermolecular forces)
+                const dx = targetX - p.x;
+                const dy = targetY - p.y;
+
+                // Damping the movement
+                p.vx *= 0.98;
+                p.vy *= 0.98;
+
+                // Applying restoring force
+                p.vx += dx * 0.005;
+                p.vy += dy * 0.005;
+
+                // Boundary check to keep within the initial block
+                const blockWidth = particlesPerRow * spacing;
+                const blockHeight = Math.ceil(particleCount / particlesPerRow) * spacing;
+
+                if (p.x < PADDING || p.x > PADDING + blockWidth) p.vx *= -1;
+                if (p.y < PADDING || p.y > PADDING + blockHeight) p.vy *= -1;
+            });
+        }
+
+        function updateLiquid() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const PADDING = 0; // Liquids fill the bottom
+
+            particles.forEach(p => {
+                // Apply movement
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Simple gravity effect (pulls particles down)
+                p.vy += 0.05;
+
+                // Boundary conditions
+                // Left/Right Walls
+                if (p.x < PADDING + PARTICLE_RADIUS || p.x > w - PADDING - PARTICLE_RADIUS) {
+                    p.vx *= -0.9; // Bounce with energy loss
+                    p.x = Math.max(PADDING + PARTICLE_RADIUS, Math.min(p.x, w - PADDING - PARTICLE_RADIUS));
+                }
+
+                // Bottom 'Surface'
+                if (p.y > h - PADDING - PARTICLE_RADIUS) {
+                    p.vy *= -0.7; // Bounce off the bottom
+                    p.vx *= 0.95; // Friction on bottom
+                    p.y = h - PADDING - PARTICLE_RADIUS;
+                }
+                // Top 'Surface' (simulating cohesion/surface tension by keeping them generally low)
+                if (p.y < PADDING + PARTICLE_RADIUS) {
+                    p.vy = Math.abs(p.vy) * 0.5; // Stops particles from flying out easily
+                }
+            });
+        }
+
+        function updateGas() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const PADDING = 0; // Gas fills the entire container
+
+            particles.forEach(p => {
+                // Apply movement
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // High speed, random movement, and fills the entire space
+                // Boundary conditions (bounce off the walls)
+                if (p.x < PADDING + PARTICLE_RADIUS || p.x > w - PADDING - PARTICLE_RADIUS) {
+                    p.vx *= -1;
+                    // Nudge back inside to prevent sticking
+                    p.x = Math.max(PADDING + PARTICLE_RADIUS, Math.min(p.x, w - PADDING - PARTICLE_RADIUS));
+                }
+
+                if (p.y < PADDING + PARTICLE_RADIUS || p.y > h - PADDING - PARTICLE_RADIUS) {
+                    p.vy *= -1;
+                    // Nudge back inside to prevent sticking
+                    p.y = Math.max(PADDING + PARTICLE_RADIUS, Math.min(p.y, h - PADDING - PARTICLE_RADIUS));
+                }
+            });
+        }
+
+        // --- MAIN DRAW AND ANIMATION LOOP ---
+
+        function animate() {
+            clearCanvas();
+
+            // Draw the container boundary
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw particles based on the current state
+            switch (currentState) {
+                case 'solid':
+                    updateSolid();
+                    particles.forEach(p => p.draw());
+                    // Draw the fixed structure outline
+                    const particlesPerRow = Math.ceil(Math.sqrt(particleCount * 0.8));
+                    const spacing = 1.5 * PARTICLE_RADIUS * 2;
+                    ctx.strokeStyle = '#2563eb';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(10, 10, particlesPerRow * spacing, Math.ceil(particleCount / particlesPerRow) * spacing);
+                    break;
+                case 'liquid':
+                    updateLiquid();
+                    particles.forEach(p => p.draw());
+                    // Draw the liquid level line
+                    const levelY = particles.reduce((minY, p) => Math.min(minY, p.y), canvas.height);
+                    ctx.beginPath();
+                    ctx.moveTo(0, levelY);
+                    ctx.lineTo(canvas.width, levelY);
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    break;
+                case 'gas':
+                    updateGas();
+                    particles.forEach(p => p.draw());
+                    // Draw a subtle fill color to indicate expansion
+                    ctx.globalAlpha = 0.05;
+                    ctx.fillStyle = '#f87171';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.globalAlpha = 1; // Reset alpha
+                    break;
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // --- STATE CONTROL ---
+
+        function resetSimulation(newState) {
+            stopAnimation();
+            currentState = newState;
+            initParticles(newState);
+            animate();
+            updateDescription(newState);
+
+            // Update active button styling
+            document.querySelectorAll('.state-btn').forEach(btn => {
+                const isCurrent = btn.getAttribute('data-state') === newState;
+                btn.classList.toggle('ring-4', isCurrent);
+                btn.classList.toggle('ring-offset-2', isCurrent);
+                btn.classList.toggle('ring-opacity-50', isCurrent);
+                if (isCurrent) {
+                    btn.classList.add(`ring-${btn.id.split('Btn')[0]}-400`);
+                } else {
+                    btn.classList.remove('ring-blue-400', 'ring-green-400', 'ring-red-400');
+                }
+            });
+        }
+
+        function updateDescription(state) {
+            let title = '';
+            let content = '';
+
+            if (state === 'solid') {
+                title = '🧊 Solid State';
+                content = `
+                    <p><strong>Fixed Shape, Fixed Volume.</strong></p>
+                    <p>The particles are arranged in a rigid, closely packed structure (like a crystal lattice). They have strong forces of attraction and only vibrate slightly around a fixed point. This gives a solid its defined shape and volume.</p>
+                `;
+            } else if (state === 'liquid') {
+                title = '💧 Liquid State';
+                content = `
+                    <p><strong>Fixed Volume, No Fixed Shape.</strong></p>
+                    <p>The particles are still closely packed but have enough energy to slide past one another. This allows the liquid to flow and take the shape of the lower portion of its container, while maintaining a constant volume.</p>
+                `;
+            } else if (state === 'gas') {
+                title = '💨 Gas State';
+                content = `
+                    <p><strong>No Fixed Shape, No Fixed Volume.</strong></p>
+                    <p>The particles are far apart and move randomly and rapidly in all directions. They have very weak forces of attraction, causing the gas to expand and completely fill the entire volume of the container.</p>
+                `;
+            }
+
+            descriptionDiv.querySelector('h2').textContent = title;
+            descriptionDiv.querySelector('p').innerHTML = content;
+        }
+
+        // --- EVENT LISTENERS ---
+
+        window.addEventListener('load', () => {
+            // Wait for the window to load before running initialization
+            resizeCanvas();
+            document.getElementById('solidBtn').addEventListener('click', () => resetSimulation('solid'));
+            document.getElementById('liquidBtn').addEventListener('click', () => resetSimulation('liquid'));
+            document.getElementById('gasBtn').addEventListener('click', () => resetSimulation('gas'));
+
+            // Initial state load
+            resetSimulation('solid');
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+    </script>
+</body>
+</html>
+

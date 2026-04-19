@@ -1,0 +1,559 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interactive Periodic Table</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --bg-deep: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+            color: #f8fafc;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar for the table wrapper */
+        .table-wrapper::-webkit-scrollbar { height: 8px; }
+        .table-wrapper::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 4px; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .table-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        .periodic-grid {
+            display: grid;
+            grid-template-columns: repeat(18, minmax(60px, 1fr));
+            grid-template-rows: repeat(10, minmax(60px, 1fr));
+            gap: 6px;
+            padding: 20px;
+            min-width: 1200px; /* Forces scroll on small screens to maintain layout */
+            margin: 0 auto;
+        }
+
+        /* Element Box Styles */
+        .element {
+            position: relative;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+        }
+
+        .element:hover {
+            transform: scale(1.15);
+            z-index: 20;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        .atomic-num {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        .symbol {
+            font-size: 1.5rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .name {
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+            text-align: center;
+            width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Real World Color Mapping */
+        .colorless {
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #e2e8f0;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .colorless:hover { background: rgba(255,255,255,0.08); box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+
+        .silver {
+            background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+        .silver:hover { box-shadow: 0 0 20px rgba(148,163,184,0.5); }
+
+        .gold {
+            background: linear-gradient(135deg, #fef08a, #eab308);
+            color: #422006;
+            border-color: #fef08a;
+        }
+        .gold:hover { box-shadow: 0 0 25px rgba(234,179,8,0.6); }
+
+        .copper {
+            background: linear-gradient(135deg, #fdba74, #b45309);
+            color: #451a03;
+            border-color: #fdba74;
+        }
+        .copper:hover { box-shadow: 0 0 25px rgba(217,119,6,0.6); }
+
+        .grey {
+            background: linear-gradient(135deg, #64748b, #334155);
+            color: #f8fafc;
+            border-color: #94a3b8;
+        }
+        .grey:hover { box-shadow: 0 0 20px rgba(100,116,139,0.5); }
+
+        .yellow {
+            background: linear-gradient(135deg, #fef08a, #ca8a04);
+            color: #422006;
+        }
+        .pale-green {
+            background: linear-gradient(135deg, #a7f3d0, #10b981);
+            color: #064e3b;
+        }
+        .purple-dark {
+            background: linear-gradient(135deg, #701a75, #4a044e);
+            color: #fdf4ff;
+        }
+        .red-brown {
+            background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+            color: #fef2f2;
+        }
+        .black {
+            background: linear-gradient(135deg, #1e293b, #020617);
+            color: #f8fafc;
+            border-color: #475569;
+        }
+
+        /* Modal Styles */
+        #element-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #element-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        #element-modal.active .modal-content {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-header {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            cursor: pointer;
+            color: rgba(255,255,255,0.5);
+            transition: color 0.2s;
+        }
+        .modal-close:hover { color: #fff; }
+
+        .modal-symbol {
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+        .modal-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .modal-body {
+            padding: 24px 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 12px;
+        }
+        .stat-label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .fact-box {
+            background: linear-gradient(145deg, rgba(56, 189, 248, 0.1), rgba(168, 85, 247, 0.1));
+            border-left: 4px solid #38bdf8;
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="p-6 text-center shrink-0">
+        <h1 class="text-3xl font-extrabold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-purple-500 mb-2">
+            The Periodic Table
+        </h1>
+        <p class="text-sm text-slate-400 max-w-2xl mx-auto">
+            Interactive, real-world color representation. Colorless gases are completely transparent. Click any element to discover its state and crucial role in modern technology, electronics, and daily life.
+        </p>
+    </header>
+
+    <div class="table-wrapper w-full overflow-x-auto flex-grow flex items-start justify-start md:justify-center">
+        <div id="grid" class="periodic-grid">
+            <!-- Elements injected via JS -->
+        </div>
+    </div>
+
+    <!-- The Modal -->
+    <div id="element-modal" onclick="closeModal(event)">
+        <div class="modal-content" id="modal-inner" onclick="event.stopPropagation()">
+            <i data-lucide="x" class="modal-close w-6 h-6" onclick="closeModal(event)"></i>
+            
+            <div id="modal-header" class="modal-header">
+                <div id="modal-num" class="absolute top-4 left-6 text-xl font-mono font-bold opacity-60">1</div>
+                <div id="modal-symbol" class="modal-symbol">H</div>
+                <div id="modal-name" class="modal-name">Hydrogen</div>
+            </div>
+            
+            <div class="modal-body">
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Physical State</div>
+                        <div class="stat-value flex items-center gap-2">
+                            <i id="state-icon" data-lucide="cloud" class="w-4 h-4 text-sky-400"></i>
+                            <span id="modal-state">Gas</span>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Appearance</div>
+                        <div class="stat-value capitalize" id="modal-color">Colorless</div>
+                    </div>
+                </div>
+                
+                <div class="fact-box">
+                    <div class="text-xs text-sky-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4"></i> Real-World Application
+                    </div>
+                    <p id="modal-fact" class="text-sm text-slate-200 leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Real-world physical color mapped to CSS classes
+        // colorless = transparent glass
+        // silver = silvery metallic
+        // gold = gold metallic
+        // copper = copper/orange metallic
+        // grey = dark grey/semiconductor
+        // black = graphite/dark
+        // yellow = sulfur yellow
+        // pale-green = chlorine gas
+        // red-brown = bromine
+        // purple-dark = iodine
+
+        const elementData = [
+            [1, 'H', 'Hydrogen', 1, 1, 'Gas', 'colorless', 'The most abundant element. Used in fuel cells for clean electric vehicles and rocket fuel.'],
+            [2, 'He', 'Helium', 18, 1, 'Gas', 'colorless', 'Crucial for cooling superconducting magnets in MRI scanners and manufacturing fiber optics.'],
+            
+            [3, 'Li', 'Lithium', 1, 2, 'Solid', 'silver', 'The backbone of modern tech. Used in Li-ion rechargeable batteries for your mobile phone, laptop, and EVs.'],
+            [4, 'Be', 'Beryllium', 2, 2, 'Solid', 'grey', 'Used in specialized alloys for cell phone springs and contacts due to its high electrical conductivity.'],
+            [5, 'B', 'Boron', 13, 2, 'Solid', 'black', 'Used in neodymium magnets inside headphones and smartphone speakers to make them highly magnetic.'],
+            [6, 'C', 'Carbon', 14, 2, 'Solid', 'black', 'Forms graphite (pencil lead) and diamond. Essential for touchscreens and battery electrodes.'],
+            [7, 'N', 'Nitrogen', 15, 2, 'Gas', 'colorless', 'Liquid nitrogen cools overclocked CPUs. Gas is used to manufacture almost all electronics in clean rooms.'],
+            [8, 'O', 'Oxygen', 16, 2, 'Gas', 'colorless', 'Essential for human life. Used in the manufacturing of optical fibers and semiconductors.'],
+            [9, 'F', 'Fluorine', 17, 2, 'Gas', 'colorless', 'Used to etch intricate microscopic circuits on the silicon wafers inside your CPU and GPU.'],
+            [10, 'Ne', 'Neon', 18, 2, 'Gas', 'colorless', 'Used in classic neon signs and in helium-neon lasers used for barcode scanners.'],
+            
+            [11, 'Na', 'Sodium', 1, 3, 'Solid', 'silver', 'Used in streetlights (giving them a yellow glow) and is being researched for next-gen Sodium-ion batteries.'],
+            [12, 'Mg', 'Magnesium', 2, 3, 'Solid', 'silver', 'A super-light metal used to make durable, lightweight frames for premium laptops and cameras.'],
+            [13, 'Al', 'Aluminum', 13, 3, 'Solid', 'silver', 'Forms the casing of modern smartphones and MacBooks. Used as heat sinks on PC motherboards.'],
+            [14, 'Si', 'Silicon', 14, 3, 'Solid', 'grey', 'The ultimate semiconductor. The heart of every CPU, GPU, memory chip, and solar panel in the world.'],
+            [15, 'P', 'Phosphorus', 15, 3, 'Solid', 'white', 'Used to "dope" silicon chips to make them conductive. Also used in LED TV screens.'],
+            [16, 'S', 'Sulfur', 16, 3, 'Solid', 'yellow', 'Essential for vulcanizing rubber for car tires and used in OLED display manufacturing.'],
+            [17, 'Cl', 'Chlorine', 17, 3, 'Gas', 'pale-green', 'Used to manufacture PVC plastics (wire insulation) and to purify water.'],
+            [18, 'Ar', 'Argon', 18, 3, 'Gas', 'colorless', 'Fills the gap between double-pane windows for insulation, and used to grow silicon crystals for microchips.'],
+            
+            [19, 'K', 'Potassium', 1, 4, 'Solid', 'silver', 'Used to toughen the glass on your smartphone screen (like Gorilla Glass) through ion exchange.'],
+            [20, 'Ca', 'Calcium', 2, 4, 'Solid', 'silver', 'Alloys of calcium are used in maintenance-free automotive batteries.'],
+            [21, 'Sc', 'Scandium', 3, 4, 'Solid', 'silver', 'Alloyed with aluminum to make high-end bicycle frames and aerospace components.'],
+            [22, 'Ti', 'Titanium', 4, 4, 'Solid', 'silver', 'Used in high-end smartphone chassis (like the iPhone 15 Pro) due to its immense strength-to-weight ratio.'],
+            [23, 'V', 'Vanadium', 5, 4, 'Solid', 'silver', 'Strengthens steel alloys used in hand tools and engine parts.'],
+            [24, 'Cr', 'Chromium', 6, 4, 'Solid', 'silver', 'Makes stainless steel "stainless". Used for the shiny metallic trims on electronics and cars.'],
+            [25, 'Mn', 'Manganese', 7, 4, 'Solid', 'silver', 'Used in standard alkaline batteries (like AA remote batteries) as manganese dioxide.'],
+            [26, 'Fe', 'Iron', 8, 4, 'Solid', 'silver', 'The core of electromagnets in hard drives (HDDs) and power transformers.'],
+            [27, 'Co', 'Cobalt', 9, 4, 'Solid', 'silver', 'A critical component of the lithium-ion batteries that power your smartphone and EV.'],
+            [28, 'Ni', 'Nickel', 10, 4, 'Solid', 'silver', 'Used in microphone capsules, mobile phone batteries, and to plate electronic connectors.'],
+            [29, 'Cu', 'Copper', 11, 4, 'Solid', 'copper', 'The nervous system of tech. Used for PCB traces, CPU heat pipes, and all charging cables.'],
+            [30, 'Zn', 'Zinc', 12, 4, 'Solid', 'silver', 'Used to galvanize steel. Also forms the anode in small hearing-aid batteries.'],
+            [31, 'Ga', 'Gallium', 13, 4, 'Solid', 'silver', 'Melts in your hand. Used in high-speed, fast-charging tech (Gallium Nitride / GaN chargers).'],
+            [32, 'Ge', 'Germanium', 14, 4, 'Solid', 'grey', 'A semiconductor used in fiber optics, infrared night vision cameras, and high-speed chips.'],
+            [33, 'As', 'Arsenic', 15, 4, 'Solid', 'grey', 'Gallium Arsenide is used in lasers, LEDs, and high-frequency cell phone signal amplifiers.'],
+            [34, 'Se', 'Selenium', 16, 4, 'Solid', 'grey', 'Used in photocopiers and light meters because its electrical conductivity changes with light.'],
+            [35, 'Br', 'Bromine', 17, 4, 'Liquid', 'red-brown', 'Used in flame retardant chemicals sprayed on the plastic casing of your TV and PC.'],
+            [36, 'Kr', 'Krypton', 18, 4, 'Gas', 'colorless', 'Used in high-speed photography flashes and fluorescent light bulbs.'],
+
+            [37, 'Rb', 'Rubidium', 1, 5, 'Solid', 'silver', 'Used in highly precise atomic clocks for GPS navigation satellites.'],
+            [38, 'Sr', 'Strontium', 2, 5, 'Solid', 'silver', 'Historically used in the glass of CRT televisions to block X-ray emissions.'],
+            [39, 'Y', 'Yttrium', 3, 5, 'Solid', 'silver', 'Used in camera lenses and white LEDs to produce bright, pure white light.'],
+            [40, 'Zr', 'Zirconium', 4, 5, 'Solid', 'silver', 'Used as an abrasive and in the ceramic casing of some premium smartwatches.'],
+            [41, 'Nb', 'Niobium', 5, 5, 'Solid', 'silver', 'Used in superconducting magnets inside MRI machines and particle accelerators.'],
+            [42, 'Mo', 'Molybdenum', 6, 5, 'Solid', 'silver', 'Used in high-strength steel alloys and touch-screen display manufacturing.'],
+            [43, 'Tc', 'Technetium', 7, 5, 'Solid', 'silver', 'A radioactive synthetic element crucial for medical imaging and diagnostic bone scans.'],
+            [44, 'Ru', 'Ruthenium', 8, 5, 'Solid', 'silver', 'Plated onto the electrical contacts of delicate micro-switches to prevent wear.'],
+            [45, 'Rh', 'Rhodium', 9, 5, 'Solid', 'silver', 'Used in catalytic converters in cars and to coat optical fibers.'],
+            [46, 'Pd', 'Palladium', 10, 5, 'Solid', 'silver', 'Essential for multi-layer ceramic capacitors (MLCCs) found by the hundreds in modern phones.'],
+            [47, 'Ag', 'Silver', 11, 5, 'Solid', 'silver', 'The best conductor of electricity. Used in flexible screens, switches, and high-end audio cables.'],
+            [48, 'Cd', 'Cadmium', 12, 5, 'Solid', 'silver', 'Previously used in rechargeable NiCd batteries; now highly restricted due to toxicity.'],
+            [49, 'In', 'Indium', 13, 5, 'Solid', 'silver', 'Forms Indium Tin Oxide (ITO), the transparent, conductive film that makes touchscreens work.'],
+            [50, 'Sn', 'Tin', 14, 5, 'Solid', 'silver', 'The primary ingredient in the solder that physically connects microchips to motherboards.'],
+            [51, 'Sb', 'Antimony', 15, 5, 'Solid', 'grey', 'Used in lead-acid car batteries and as a flame retardant in electronics.'],
+            [52, 'Te', 'Tellurium', 16, 5, 'Solid', 'grey', 'Used in rewritable CDs/DVDs and in advanced solar panels.'],
+            [53, 'I', 'Iodine', 17, 5, 'Solid', 'purple-dark', 'Used in LCD polarizers (which makes your TV and phone screen display images).'],
+            [54, 'Xe', 'Xenon', 18, 5, 'Gas', 'colorless', 'Used in plasma screen TVs and ultra-bright car headlights.'],
+
+            [55, 'Cs', 'Cesium', 1, 6, 'Solid', 'silver', 'Defines the exact length of a second. The heart of the atomic clocks that run the internet.'],
+            [56, 'Ba', 'Barium', 2, 6, 'Solid', 'silver', 'Used to remove trace oxygen in vacuum tubes and historically in CRT displays.'],
+            // Lanthanides placeholder 57-71
+            [72, 'Hf', 'Hafnium', 4, 6, 'Solid', 'silver', 'Crucial for modern Intel and AMD CPUs. Used in the transistors to prevent electrical leakage.'],
+            [73, 'Ta', 'Tantalum', 5, 6, 'Solid', 'silver', 'Stores electricity in tiny capacitors. Your mobile phone relies entirely on tantalum to function.'],
+            [74, 'W', 'Tungsten', 6, 6, 'Solid', 'grey', 'The little vibrating motor in your mobile phone uses a dense tungsten weight.'],
+            [75, 'Re', 'Rhenium', 7, 6, 'Solid', 'silver', 'Used in the super-hot exhaust nozzles of jet engines.'],
+            [76, 'Os', 'Osmium', 8, 6, 'Solid', 'silver', 'Used to make the hard, durable tips of fountain pens and record player needles.'],
+            [77, 'Ir', 'Iridium', 9, 6, 'Solid', 'silver', 'Used in premium spark plugs and OLED screens.'],
+            [78, 'Pt', 'Platinum', 10, 6, 'Solid', 'silver', 'Used in computer hard drive disks (HDDs) to maximize magnetic storage capacity.'],
+            [79, 'Au', 'Gold', 11, 6, 'Solid', 'gold', 'This element is used in Ornaments. Also lines the connection pins of CPUs and RAM because it never tarnishes.'],
+            [80, 'Hg', 'Mercury', 12, 6, 'Liquid', 'silver', 'Used in classic thermometers and fluorescent lamps/CFLs.'],
+            [81, 'Tl', 'Thallium', 13, 6, 'Solid', 'silver', 'Used in highly sensitive infrared detectors and specialized camera lenses.'],
+            [82, 'Pb', 'Lead', 14, 6, 'Solid', 'grey', 'Used in car batteries and to shield against radiation in X-ray machines.'],
+            [83, 'Bi', 'Bismuth', 15, 6, 'Solid', 'silver', 'A non-toxic replacement for lead in plumbing and used in fire sprinkler systems.'],
+            [84, 'Po', 'Polonium', 16, 6, 'Solid', 'silver', 'Used in anti-static brushes to clean photographic film.'],
+            [85, 'At', 'Astatine', 17, 6, 'Solid', 'black', 'Extremely rare and radioactive. Sometimes used in targeted cancer therapies.'],
+            [86, 'Rn', 'Radon', 18, 6, 'Gas', 'colorless', 'A naturally occurring radioactive gas. It is a hazard that accumulates in basements.'],
+
+            [87, 'Fr', 'Francium', 1, 7, 'Solid', 'silver', 'Highly radioactive and unstable. Used purely for research.'],
+            [88, 'Ra', 'Radium', 2, 7, 'Solid', 'silver', 'Historically painted onto watch dials to make them glow in the dark (before its danger was known).'],
+            // Actinides placeholder 89-103
+            [104, 'Rf', 'Rutherfordium', 4, 7, 'Solid', 'silver', 'Synthetic and highly radioactive. Only used in scientific research.'],
+            [105, 'Db', 'Dubnium', 5, 7, 'Solid', 'silver', 'Synthetic element created in particle accelerators.'],
+            [106, 'Sg', 'Seaborgium', 6, 7, 'Solid', 'silver', 'Synthetic element. Exists for only a fraction of a second.'],
+            [107, 'Bh', 'Bohrium', 7, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [108, 'Hs', 'Hassium', 8, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [109, 'Mt', 'Meitnerium', 9, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [110, 'Ds', 'Darmstadtium', 10, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [111, 'Rg', 'Roentgenium', 11, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [112, 'Cn', 'Copernicium', 12, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [113, 'Nh', 'Nihonium', 13, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [114, 'Fl', 'Flerovium', 14, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [115, 'Mc', 'Moscovium', 15, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [116, 'Lv', 'Livermorium', 16, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [117, 'Ts', 'Tennessine', 17, 7, 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [118, 'Og', 'Oganesson', 18, 7, 'Gas', 'colorless', 'The heaviest element on the table. Synthetic and highly unstable.']
+        ];
+
+        // Lanthanides (57-71) - Row 9, Col 4-18
+        const lanthanides = [
+            [57, 'La', 'Lanthanum', 'Solid', 'silver', 'Used in hybrid car batteries and high-end camera lenses.'],
+            [58, 'Ce', 'Cerium', 'Solid', 'silver', 'Used in self-cleaning ovens and to polish glass screens.'],
+            [59, 'Pr', 'Praseodymium', 'Solid', 'silver', 'Used in the glass of welder\'s goggles to block intense light.'],
+            [60, 'Nd', 'Neodymium', 'Solid', 'silver', 'Creates the strongest permanent magnets for phone speakers, hard drives, and EV motors.'],
+            [61, 'Pm', 'Promethium', 'Solid', 'silver', 'Used in atomic batteries for spacecraft.'],
+            [62, 'Sm', 'Samarium', 'Solid', 'silver', 'Used in specialized magnets for electric guitars and military equipment.'],
+            [63, 'Eu', 'Europium', 'Solid', 'silver', 'The red and blue phosphors in TV screens and LED bulbs.'],
+            [64, 'Gd', 'Gadolinium', 'Solid', 'silver', 'Used in MRI contrast agents to improve medical image clarity.'],
+            [65, 'Tb', 'Terbium', 'Solid', 'silver', 'Used to create green phosphors in modern flat-panel displays.'],
+            [66, 'Dy', 'Dysprosium', 'Solid', 'silver', 'Added to Neodymium magnets to make them resistant to high heat in EV motors.'],
+            [67, 'Ho', 'Holmium', 'Solid', 'silver', 'Used in advanced medical lasers and nuclear control rods.'],
+            [68, 'Er', 'Erbium', 'Solid', 'silver', 'Doped into fiber optic cables to amplify internet data signals across oceans.'],
+            [69, 'Tm', 'Thulium', 'Solid', 'silver', 'Used in portable X-ray machines.'],
+            [70, 'Yb', 'Ytterbium', 'Solid', 'silver', 'Used in seismic memory devices and atomic clocks.'],
+            [71, 'Lu', 'Lutetium', 'Solid', 'silver', 'Used in PET scan detectors for medical imaging.']
+        ].map((e, i) => [e[0], e[1], e[2], i + 4, 9, e[3], e[4], e[5]]);
+
+        // Actinides (89-103) - Row 10, Col 4-18
+        const actinides = [
+            [89, 'Ac', 'Actinium', 'Solid', 'silver', 'Highly radioactive, glows blue in the dark.'],
+            [90, 'Th', 'Thorium', 'Solid', 'silver', 'Used in high-end camping lantern mantles.'],
+            [91, 'Pa', 'Protactinium', 'Solid', 'silver', 'Rare and highly radioactive. Used in research.'],
+            [92, 'U', 'Uranium', 'Solid', 'silver', 'Used as fuel in nuclear power plants.'],
+            [93, 'Np', 'Neptunium', 'Solid', 'silver', 'Used in neutron detection equipment.'],
+            [94, 'Pu', 'Plutonium', 'Solid', 'silver', 'Powers deep space probes (like the Mars Rover) via thermoelectric generators.'],
+            [95, 'Am', 'Americium', 'Solid', 'silver', 'Found in almost every household smoke detector.'],
+            [96, 'Cm', 'Curium', 'Solid', 'silver', 'Used to power remote scientific instruments in space.'],
+            [97, 'Bk', 'Berkelium', 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [98, 'Cf', 'Californium', 'Solid', 'silver', 'Used in moisture gauges for oil drilling and metal detectors.'],
+            [99, 'Es', 'Einsteinium', 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [100, 'Fm', 'Fermium', 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [101, 'Md', 'Mendelevium', 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [102, 'No', 'Nobelium', 'Solid', 'silver', 'Synthetic element. No commercial applications.'],
+            [103, 'Lr', 'Lawrencium', 'Solid', 'silver', 'Synthetic element. No commercial applications.']
+        ].map((e, i) => [e[0], e[1], e[2], i + 4, 10, e[3], e[4], e[5]]);
+
+        const allElements = [...elementData, ...lanthanides, ...actinides];
+
+        const grid = document.getElementById('grid');
+
+        // Render the Grid
+        allElements.forEach(el => {
+            const [num, sym, name, col, row, state, colorClass, fact] = el;
+            
+            const div = document.createElement('div');
+            div.className = `element ${colorClass}`;
+            div.style.gridColumn = col;
+            div.style.gridRow = row;
+            
+            // Add a slight delay to animation for a cool cascade effect on load
+            div.style.animation = `fadeIn 0.5s ease-out ${(num * 0.005)}s both`;
+
+            div.innerHTML = `
+                <div class="atomic-num">${num}</div>
+                <div class="symbol">${sym}</div>
+                <div class="name">${name}</div>
+            `;
+
+            div.onclick = () => openModal(num, sym, name, state, colorClass, fact);
+            grid.appendChild(div);
+        });
+
+        // Modal Logic
+        const modal = document.getElementById('element-modal');
+        const modalInner = document.getElementById('modal-inner');
+        const modalHeader = document.getElementById('modal-header');
+
+        function openModal(num, sym, name, state, colorClass, fact) {
+            document.getElementById('modal-num').innerText = num;
+            document.getElementById('modal-symbol').innerText = sym;
+            document.getElementById('modal-name').innerText = name;
+            document.getElementById('modal-state').innerText = state;
+            document.getElementById('modal-fact').innerText = fact;
+            
+            // Update color class description for UI
+            const colorText = colorClass === 'colorless' ? 'Colorless / Transparent' : 
+                              colorClass === 'silver' ? 'Silvery Metallic' : 
+                              colorClass === 'gold' ? 'Gold Metallic' : colorClass;
+            document.getElementById('modal-color').innerText = colorText;
+
+            // Apply specific gradient to modal header based on element color
+            modalHeader.className = `modal-header ${colorClass}`;
+            
+            // Icon logic
+            const iconEl = document.getElementById('state-icon');
+            if (state === 'Gas') {
+                iconEl.setAttribute('data-lucide', 'cloud');
+                iconEl.className = "w-4 h-4 text-sky-400";
+            } else if (state === 'Liquid') {
+                iconEl.setAttribute('data-lucide', 'droplet');
+                iconEl.className = "w-4 h-4 text-blue-400";
+            } else {
+                iconEl.setAttribute('data-lucide', 'box');
+                iconEl.className = "w-4 h-4 text-slate-400";
+            }
+            lucide.createIcons();
+
+            modal.classList.add('active');
+        }
+
+        function closeModal(e) {
+            modal.classList.remove('active');
+        }
+
+        // Initialize Icons
+        lucide.createIcons();
+
+    </script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</body>
+</html>
+
