@@ -1,0 +1,490 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scientific Learning - Class 5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body { font-family: 'Nunito', sans-serif; background-color: #f0f9ff; overflow-x: hidden; touch-action: pan-y; }
+
+        /* 1. Flip Card Styles */
+        .flip-card { background-color: transparent; width: 100%; height: 200px; perspective: 1000px; cursor: pointer; }
+        .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 1.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5rem; border: 4px solid; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .flip-card-front { background-color: #fff; border-color: #cbd5e1; }
+        .flip-card-back { background-color: #eff6ff; border-color: #3b82f6; transform: rotateY(180deg); }
+
+        /* 2. Drag and Drop Styles */
+        .draggable-item { touch-action: none; user-select: none; cursor: grab; z-index: 10; }
+        .draggable-item * { pointer-events: none; } 
+        .draggable-item:active { cursor: grabbing; }
+        .dragging { z-index: 50; opacity: 0.9; transform: scale(1.1); transition: none !important; }
+        .shake-err { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+        /* 3. Flashlight Simulation Styles */
+        .sim-step { display: none; animation: fadeIn 0.5s forwards; }
+        .sim-step.active { display: flex; }
+        .light-beam { opacity: 0; clip-path: polygon(0 50%, 100% 0, 100% 100%); background: linear-gradient(90deg, rgba(253, 224, 71, 0.9) 0%, rgba(253, 224, 71, 0) 100%); transition: opacity 0.3s ease-in; pointer-events: none; }
+        .light-beam.on { opacity: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .battery-draggable { touch-action: none; cursor: grab; transition: transform 0.2s; }
+        .battery-draggable * { pointer-events: none; }
+
+        /* Mind Map connecting lines for desktop */
+        @media (min-width: 768px) {
+            .mind-map-arrow::after {
+                content: '➔';
+                position: absolute;
+                right: -25px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #94a3b8;
+                font-size: 1.5rem;
+                font-weight: bold;
+            }
+            .mind-map-arrow:last-child::after { content: ''; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 pb-16">
+
+    <div class="max-w-4xl mx-auto px-4 pt-6 space-y-8">
+        
+        <!-- Header -->
+        <div class="text-center bg-white p-6 rounded-3xl shadow-md border-b-4 border-blue-500">
+            <h1 class="text-3xl md:text-4xl font-black text-blue-700">Scientific Learning</h1>
+            <p class="text-xl text-gray-600 font-bold mt-1">(वैज्ञानिक सिकाइ)</p>
+            <p class="mt-2 text-sm font-bold text-blue-400">For Class 5 🎒</p>
+        </div>
+
+        <!-- 1. DEFINITION SECTION (Short & Simple) -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-indigo-500">
+            <h2 class="text-2xl font-bold text-indigo-800 mb-4 flex items-center">
+                <span class="text-3xl mr-3">🕵️</span> 1. What is it? (परिभाषा)
+            </h2>
+            
+            <div class="flip-card mx-auto max-w-md" id="defCard" onclick="flipCard()">
+                <div class="flip-card-inner">
+                    <!-- Front -->
+                    <div class="flip-card-front space-y-2">
+                        <span class="text-6xl mb-2">🤔</span>
+                        <h3 class="text-2xl font-black text-gray-700">Is it just guessing?</h3>
+                        <p class="text-gray-500 font-bold">(के यो अनुमान मात्र हो?)</p>
+                        <p class="text-sm text-indigo-500 animate-pulse mt-2 font-bold">Tap to see! ➔</p>
+                    </div>
+                    <!-- Back -->
+                    <div class="flip-card-back space-y-3">
+                        <span class="text-5xl mb-1">🔎</span>
+                        <p class="text-xl text-indigo-900 font-black leading-tight">Finding proof to know the truth, instead of just guessing!</p>
+                        <div class="h-px w-full bg-indigo-200"></div>
+                        <p class="text-lg text-indigo-800 font-bold leading-tight">अनुमान मात्र नगरी सत्य पत्ता लगाउन प्रमाण खोज्ने तरिका!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. EXAMPLES SECTION -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-purple-500">
+            <h2 class="text-2xl font-bold text-purple-800 mb-2 flex items-center">
+                <span class="text-3xl mr-3">⚖️</span> 2. Examples (उदाहरणहरू)
+            </h2>
+            <p class="text-gray-600 mb-6 font-bold text-center">Drag the cards to the right box! / सही बाकसमा तान्नुहोस्!</p>
+            
+            <!-- Drop Zones -->
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div id="zone-trad" class="flex-1 bg-red-50 border-4 border-dashed border-red-300 rounded-2xl p-4 text-center min-h-[140px]">
+                    <h3 class="text-xl font-black text-red-700">❌ Traditional Learning</h3>
+                    <p class="text-red-500 font-bold mb-2 text-sm">(परम्परागत सिकाइ)</p>
+                    <div class="zone-content space-y-2"></div>
+                </div>
+                <div id="zone-sci" class="flex-1 bg-green-50 border-4 border-dashed border-green-300 rounded-2xl p-4 text-center min-h-[140px]">
+                    <h3 class="text-xl font-black text-green-700">✅ Scientific Learning</h3>
+                    <p class="text-green-500 font-bold mb-2 text-sm">(वैज्ञानिक सिकाइ)</p>
+                    <div class="zone-content space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Draggable Items -->
+            <div id="draggables-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 relative">
+                <div class="draggable-item bg-white border-2 border-gray-300 rounded-xl p-3 shadow flex items-center gap-2" data-type="trad">
+                    <span class="text-2xl">📖</span> <p class="text-sm font-bold text-gray-700">Memorizing answers from a book. <br><span class="text-xs text-gray-500">किताबबाट उत्तर घोक्नु।</span></p>
+                </div>
+                <div class="draggable-item bg-white border-2 border-gray-300 rounded-xl p-3 shadow flex items-center gap-2" data-type="sci">
+                    <span class="text-2xl">🧪</span> <p class="text-sm font-bold text-gray-700">Doing an experiment to see what happens. <br><span class="text-xs text-gray-500">के हुन्छ भनेर हेर्न आफैं प्रयोग गर्नु।</span></p>
+                </div>
+                <div class="draggable-item bg-white border-2 border-gray-300 rounded-xl p-3 shadow flex items-center gap-2" data-type="trad">
+                    <span class="text-2xl">🗣️</span> <p class="text-sm font-bold text-gray-700">Believing a story blindly. <br><span class="text-xs text-gray-500">कथालाई अन्धाधुन्ध विश्वास गर्नु।</span></p>
+                </div>
+                <div class="draggable-item bg-white border-2 border-gray-300 rounded-xl p-3 shadow flex items-center gap-2" data-type="sci">
+                    <span class="text-2xl">❓</span> <p class="text-sm font-bold text-gray-700">Asking "Why?" and searching for proof. <br><span class="text-xs text-gray-500">"किन?" भनेर सोध्नु र प्रमाण खोज्नु।</span></p>
+                </div>
+            </div>
+            
+            <div id="sorting-success" class="hidden mt-4 bg-green-100 text-green-800 p-3 rounded-xl text-center font-bold animate-bounce">
+                Great job! You know how scientists learn! 🎉
+            </div>
+        </section>
+
+        <!-- 3. MIND MAP: The Process -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-orange-500">
+            <h2 class="text-2xl font-bold text-orange-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">🗺️</span> 3. The Mind Map (प्रक्रिया)
+            </h2>
+            
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <!-- Step 1 -->
+                <div class="mind-map-arrow relative flex flex-col items-center text-center w-full md:w-1/5 bg-indigo-50 p-3 rounded-xl border border-indigo-200 shadow-sm">
+                    <span class="text-3xl mb-1">👁️</span>
+                    <span class="font-black text-indigo-700">1. Observe</span>
+                    <span class="text-xs font-bold text-indigo-500">(अवलोकन)</span>
+                </div>
+                <div class="md:hidden text-gray-400 font-bold">⬇️</div>
+                <!-- Step 2 -->
+                <div class="mind-map-arrow relative flex flex-col items-center text-center w-full md:w-1/5 bg-blue-50 p-3 rounded-xl border border-blue-200 shadow-sm">
+                    <span class="text-3xl mb-1">❓</span>
+                    <span class="font-black text-blue-700">2. Ask</span>
+                    <span class="text-xs font-bold text-blue-500">(प्रश्न)</span>
+                </div>
+                <div class="md:hidden text-gray-400 font-bold">⬇️</div>
+                <!-- Step 3 -->
+                <div class="mind-map-arrow relative flex flex-col items-center text-center w-full md:w-1/5 bg-purple-50 p-3 rounded-xl border border-purple-200 shadow-sm">
+                    <span class="text-3xl mb-1">💡</span>
+                    <span class="font-black text-purple-700">3. Guess</span>
+                    <span class="text-xs font-bold text-purple-500">(अनुमान)</span>
+                </div>
+                <div class="md:hidden text-gray-400 font-bold">⬇️</div>
+                <!-- Step 4 -->
+                <div class="mind-map-arrow relative flex flex-col items-center text-center w-full md:w-1/5 bg-orange-50 p-3 rounded-xl border border-orange-200 shadow-sm">
+                    <span class="text-3xl mb-1">🧪</span>
+                    <span class="font-black text-orange-700">4. Test</span>
+                    <span class="text-xs font-bold text-orange-500">(परीक्षण)</span>
+                </div>
+                <div class="md:hidden text-gray-400 font-bold">⬇️</div>
+                <!-- Step 5 -->
+                <div class="mind-map-arrow relative flex flex-col items-center text-center w-full md:w-1/5 bg-green-50 p-3 rounded-xl border border-green-200 shadow-sm">
+                    <span class="text-3xl mb-1">✅</span>
+                    <span class="font-black text-green-700">5. Conclusion</span>
+                    <span class="text-xs font-bold text-green-500">(निष्कर्ष)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. SIMULATION OF PROCESS -->
+        <section class="bg-slate-900 rounded-3xl shadow-2xl p-6 border-l-8 border-yellow-400 text-white relative overflow-hidden" id="sim-area">
+            <h2 class="text-2xl font-bold text-yellow-400 mb-2 flex items-center relative z-10">
+                <span class="text-3xl mr-3">🔦</span> 4. Process Simulation
+            </h2>
+            <p class="text-gray-300 font-bold mb-6 text-sm relative z-10">The Mystery of the Broken Flashlight (बिग्रिएको टर्चको रहस्य)</p>
+
+            <div class="min-h-[280px] relative z-10 flex flex-col items-center justify-center bg-slate-800 rounded-2xl p-4 border border-slate-700">
+                
+                <!-- The Flashlight SVG -->
+                <div class="relative w-64 h-32 mb-4" id="flashlight-container">
+                    <div id="sim-beam" class="light-beam absolute top-[-50px] left-[180px] w-[300px] h-[230px]"></div>
+                    <svg viewBox="0 0 200 100" class="w-full h-full relative z-10 drop-shadow-xl">
+                        <path d="M 20 30 L 120 30 L 140 10 L 180 10 L 180 90 L 140 90 L 120 70 L 20 70 Z" fill="#334155" />
+                        <!-- Red Switch Element -->
+                        <rect id="fl-switch" x="60" y="25" width="20" height="10" rx="3" fill="#ef4444" class="cursor-pointer transition-transform hover:scale-110" onclick="handleSwitchClick()" />
+                        <ellipse cx="180" cy="50" rx="5" ry="40" fill="#cbd5e1" opacity="0.6"/>
+                        <line x1="120" y1="30" x2="120" y2="70" stroke="#1e293b" stroke-width="3" />
+                    </svg>
+                    
+                    <!-- NEW ENLARGED BATTERY DROPZONE (Much easier to hit) -->
+                    <!-- I expanded width/height and moved it slightly up to catch early drops -->
+                    <div id="battery-dropzone" class="absolute top-[-10%] left-[5%] w-[60%] h-[120%] border-4 border-dashed border-green-400 bg-green-500/30 rounded-lg hidden flex-col items-center justify-center animate-pulse z-20 pointer-events-none">
+                        <span class="text-lg font-black text-white drop-shadow-md">Drop Here!</span>
+                    </div>
+                </div>
+
+                <!-- STEPS UI -->
+                
+                <!-- Step 1: Observe -->
+                <div id="step-1" class="sim-step active flex-col items-center text-center w-full">
+                    <div class="bg-indigo-900 text-indigo-200 px-4 py-1 rounded-full text-sm font-bold mb-2">Step 1: Observe (अवलोकन)</div>
+                    <p class="text-gray-300 mb-2 font-bold">Look at the flashlight. Click the red switch.</p>
+                    <div id="step-1-obs" class="hidden text-orange-400 font-bold text-lg animate-pulse mt-2">👁️ Nothing happened! It is broken.</div>
+                    <button id="step-1-next" onclick="advanceToStep(2)" class="hidden mt-3 bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow transition hover:bg-blue-500">
+                        Next ➔
+                    </button>
+                </div>
+
+                <!-- Step 2: Ask -->
+                <div id="step-2" class="sim-step flex-col items-center text-center w-full">
+                    <div class="bg-blue-900 text-blue-200 px-4 py-1 rounded-full text-sm font-bold mb-2">Step 2: Ask (प्रश्न)</div>
+                    <p class="text-gray-300 mb-2 font-bold">Now that we observed it is broken, what should we do?</p>
+                    <div class="text-red-400 font-bold text-lg mt-2">❓ Why isn't it turning on?</div>
+                    <button onclick="advanceToStep(3)" class="mt-3 bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow transition hover:bg-blue-500">
+                        Next ➔
+                    </button>
+                </div>
+
+                <!-- Step 3: Guess -->
+                <div id="step-3" class="sim-step flex-col items-center text-center w-full">
+                    <div class="bg-purple-900 text-purple-200 px-4 py-1 rounded-full text-sm font-bold mb-4">Step 3: Guess (अनुमान)</div>
+                    <div class="flex flex-col gap-3 w-full max-w-xs">
+                        <button onclick="badGuess(event)" class="bg-slate-700 text-gray-200 py-2 px-4 rounded-xl border border-slate-500 font-bold">
+                            "A ghost broke it!" 👻
+                        </button>
+                        <button onclick="advanceToStep(4)" class="bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg border border-green-400 transform hover:scale-105 transition">
+                            "The batteries are dead!" 🔋
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Test/Experiment -->
+                <div id="step-4" class="sim-step flex-col items-center text-center w-full">
+                    <div class="bg-orange-900 text-orange-200 px-4 py-1 rounded-full text-sm font-bold mb-2">Step 4: Test (परीक्षण)</div>
+                    <p class="text-gray-300 mb-4 text-sm font-bold">Drag the batteries near the glowing green box!</p>
+                    
+                    <div class="flex gap-4 mb-2 justify-center" id="battery-source">
+                        <div class="battery-draggable" id="bat1" data-type="battery">
+                            <svg viewBox="0 0 40 20" width="70" height="35" class="drop-shadow-lg"><rect x="5" y="2" width="30" height="16" fill="#10b981" rx="2"/><rect x="35" y="6" width="3" height="8" fill="#d1d5db" /><text x="15" y="15" fill="#fff" font-size="10" font-weight="bold">+</text></svg>
+                        </div>
+                        <div class="battery-draggable" id="bat2" data-type="battery">
+                            <svg viewBox="0 0 40 20" width="70" height="35" class="drop-shadow-lg"><rect x="5" y="2" width="30" height="16" fill="#10b981" rx="2"/><rect x="35" y="6" width="3" height="8" fill="#d1d5db" /><text x="15" y="15" fill="#fff" font-size="10" font-weight="bold">+</text></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Conclusion -->
+                <div id="step-5" class="sim-step flex-col items-center text-center w-full">
+                    <div class="bg-green-900 text-green-200 px-4 py-1 rounded-full text-sm font-bold mb-2">Step 5: Conclusion (निष्कर्ष)</div>
+                    <p class="text-gray-300 mb-3 font-bold">Click the red switch again!</p>
+                    <div id="step-5-success" class="hidden bg-green-500 text-white px-4 py-2 rounded-xl font-bold animate-bounce">
+                        Your guess was right! ✅ You solved it!
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 5. KEY WORDS TO REMEMBER -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-teal-500">
+            <h2 class="text-2xl font-bold text-teal-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📚</span> 5. Key Words to Remember
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100 flex items-start gap-3">
+                    <span class="text-2xl mt-1">👁️</span>
+                    <div>
+                        <h4 class="font-black text-teal-900">Observe (अवलोकन)</h4>
+                        <p class="text-sm text-teal-700 font-bold">Looking closely at something.</p>
+                        <p class="text-xs text-gray-500 font-bold">(ध्यान दिएर हेर्नु)</p>
+                    </div>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100 flex items-start gap-3">
+                    <span class="text-2xl mt-1">💡</span>
+                    <div>
+                        <h4 class="font-black text-teal-900">Hypothesis (परिकल्पना)</h4>
+                        <p class="text-sm text-teal-700 font-bold">A smart guess before testing.</p>
+                        <p class="text-xs text-gray-500 font-bold">(परीक्षण अघिको बाठो अनुमान)</p>
+                    </div>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100 flex items-start gap-3">
+                    <span class="text-2xl mt-1">🧪</span>
+                    <div>
+                        <h4 class="font-black text-teal-900">Experiment (प्रयोग)</h4>
+                        <p class="text-sm text-teal-700 font-bold">Testing if your guess is right.</p>
+                        <p class="text-xs text-gray-500 font-bold">(आफ्नो अनुमान सही छ कि छैन जाँच्नु)</p>
+                    </div>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100 flex items-start gap-3">
+                    <span class="text-2xl mt-1">✅</span>
+                    <div>
+                        <h4 class="font-black text-teal-900">Conclusion (निष्कर्ष)</h4>
+                        <p class="text-sm text-teal-700 font-bold">The final answer you found out.</p>
+                        <p class="text-xs text-gray-500 font-bold">(तपाईंले पत्ता लगाएको अन्तिम उत्तर)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- Audio Engine ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'swoosh') {
+                osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.5, now + 0.1); gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'ding') {
+                osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'buzzer') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        }
+
+        // --- Card Flip ---
+        function flipCard() {
+            document.getElementById('defCard').classList.toggle('flipped');
+            playSound('swoosh');
+        }
+
+        // --- ROBUST TOUCH & MOUSE DRAG ENGINE ---
+        function makeDraggable(items, isSortingGame) {
+            items.forEach(item => {
+                function getEventPos(e) {
+                    if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+                    return { x: e.clientX, y: e.clientY };
+                }
+
+                function handleDragStart(e) {
+                    if (item.parentElement.classList.contains('zone-content') || item.style.display === 'none') return;
+                    
+                    let pos = getEventPos(e);
+                    const rect = item.getBoundingClientRect();
+                    let offsetX = pos.x - rect.left;
+                    let offsetY = pos.y - rect.top;
+                    
+                    item.style.position = 'fixed';
+                    item.style.width = `${rect.width}px`;
+                    item.style.left = `${rect.left}px`;
+                    item.style.top = `${rect.top}px`;
+                    item.classList.add('dragging');
+
+                    function handleDragMove(ev) { 
+                        ev.preventDefault(); // CRITICAL: Stops mobile screen from scrolling
+                        let mPos = getEventPos(ev);
+                        item.style.left = `${mPos.x - offsetX}px`; 
+                        item.style.top = `${mPos.y - offsetY}px`; 
+                    }
+                    
+                    function handleDragEnd(ev) {
+                        const itemRect = item.getBoundingClientRect();
+                        const cx = itemRect.left + itemRect.width/2; 
+                        const cy = itemRect.top + itemRect.height/2;
+                        
+                        if(isSortingGame) checkSortingDrop(item, cx, cy);
+                        else checkBatteryDrop(item, cx, cy);
+
+                        document.removeEventListener('mousemove', handleDragMove);
+                        document.removeEventListener('mouseup', handleDragEnd);
+                        document.removeEventListener('touchmove', handleDragMove);
+                        document.removeEventListener('touchend', handleDragEnd);
+                        item.classList.remove('dragging');
+                    }
+                    
+                    document.addEventListener('mousemove', handleDragMove, {passive: false});
+                    document.addEventListener('mouseup', handleDragEnd);
+                    document.addEventListener('touchmove', handleDragMove, {passive: false});
+                    document.addEventListener('touchend', handleDragEnd);
+                }
+
+                item.addEventListener('mousedown', handleDragStart);
+                item.addEventListener('touchstart', handleDragStart, {passive: false});
+            });
+        }
+
+        // Sorting Check
+        let correctSorts = 0;
+        function checkSortingDrop(item, cx, cy) {
+            const zones = {'trad': document.getElementById('zone-trad'), 'sci': document.getElementById('zone-sci')};
+            let droppedId = null; let droppedZone = null;
+            for (let [id, z] of Object.entries(zones)) {
+                const zr = z.getBoundingClientRect();
+                if (cx > zr.left && cx < zr.right && cy > zr.top && cy < zr.bottom) { droppedId = id; droppedZone = z; break; }
+            }
+
+            if (droppedZone && droppedId === item.dataset.type) {
+                playSound('ding');
+                droppedZone.querySelector('.zone-content').appendChild(item);
+                item.style.position = 'static'; item.style.width = 'auto'; item.style.cursor = 'default';
+                correctSorts++; if(correctSorts === 4) document.getElementById('sorting-success').classList.remove('hidden');
+            } else {
+                playSound('buzzer'); item.classList.add('shake-err');
+                setTimeout(() => item.classList.remove('shake-err'), 400);
+                document.getElementById('draggables-container').appendChild(item);
+                item.style.position = 'static'; item.style.width = 'auto';
+            }
+        }
+
+        // Battery Check (Now much more forgiving)
+        let batPlaced = 0; let hasBatteries = false;
+        function checkBatteryDrop(item, cx, cy) {
+            const dropzone = document.getElementById('battery-dropzone');
+            const dr = dropzone.getBoundingClientRect();
+            
+            // Expanded collision logic: It will auto-fit if the center point of the battery 
+            // touches *anywhere* near the enlarged dropzone.
+            if (cx > dr.left && cx < dr.right && cy > dr.top && cy < dr.bottom) {
+                playSound('ding');
+                item.style.display = 'none'; // Snaps inside and vanishes
+                batPlaced++;
+                
+                // Add a little visual bump to the flashlight to show it "took" the battery
+                document.querySelector('#flashlight-container svg').style.transform = 'scale(1.05)';
+                setTimeout(()=> document.querySelector('#flashlight-container svg').style.transform = 'scale(1)', 150);
+
+                if(batPlaced === 2) {
+                    hasBatteries = true;
+                    dropzone.classList.remove('flex'); dropzone.classList.add('hidden');
+                    setTimeout(() => advanceToStep(5), 600);
+                }
+            } else {
+                playSound('buzzer');
+                item.style.position = 'static';
+            }
+        }
+
+        // Init Draggables
+        makeDraggable(document.querySelectorAll('.draggable-item'), true);
+        makeDraggable(document.querySelectorAll('.battery-draggable'), false);
+
+        // --- Simulation Steps Logic ---
+        let simStep = 1;
+        function advanceToStep(step) {
+            document.querySelectorAll('.sim-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+            simStep = step; playSound('swoosh');
+            
+            // Show enlarged dropzone only on the Test step
+            if(step === 4) {
+                const dz = document.getElementById('battery-dropzone');
+                dz.classList.remove('hidden'); dz.classList.add('flex');
+            }
+        }
+
+        function handleSwitchClick() {
+            playSound('ding');
+            if (simStep === 1) {
+                document.getElementById('step-1-obs').classList.remove('hidden');
+                document.getElementById('step-1-next').classList.remove('hidden');
+            } else if (simStep === 5 && hasBatteries) {
+                document.getElementById('sim-beam').classList.add('on');
+                document.getElementById('sim-area').classList.remove('bg-slate-900');
+                document.getElementById('sim-area').classList.add('bg-slate-700');
+                document.getElementById('step-5-success').classList.remove('hidden');
+                document.getElementById('fl-switch').setAttribute('fill', '#22c55e');
+            } else { 
+                playSound('buzzer'); 
+            }
+        }
+
+        function badGuess(e) {
+            playSound('buzzer');
+            e.target.classList.add('shake-err', 'bg-red-900');
+            setTimeout(() => e.target.classList.remove('shake-err', 'bg-red-900'), 500);
+        }
+    </script>
+</body>
+</html>
+
+

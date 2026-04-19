@@ -1,0 +1,589 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Mystery Box - Science Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body { font-family: 'Nunito', sans-serif; background-color: #fdf4ff; overflow-x: hidden; touch-action: pan-y; }
+
+        /* Animation Keyframes */
+        @keyframes shake-violent {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, -5px) rotate(-3deg); }
+            20%, 40%, 60%, 80% { transform: translate(10px, 5px) rotate(3deg); }
+        }
+        .anim-shake { animation: shake-violent 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+
+        @keyframes float-up {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+        .anim-scent { animation: float-up 2s ease-out forwards; }
+
+        @keyframes reach-in {
+            0% { transform: translate(100px, -50px) scale(0.5); opacity: 0; }
+            30% { transform: translate(20px, 10px) scale(1); opacity: 1; }
+            70% { transform: translate(10px, 15px) scale(1); opacity: 1; }
+            100% { transform: translate(100px, -50px) scale(0.5); opacity: 0; }
+        }
+        .anim-hand { animation: reach-in 2s ease-in-out forwards; }
+
+        @keyframes pop-in {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .anim-pop { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes pucker {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.8) rotate(5deg); filter: sepia(1) hue-rotate(50deg); }
+            100% { transform: scale(1); }
+        }
+        .anim-pucker { animation: pucker 1.5s ease-in-out forwards; }
+
+        @keyframes box-burst {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); filter: brightness(1.5); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .anim-burst { animation: box-burst 0.5s forwards; }
+
+        /* Custom Box SVG parts */
+        #box-glow { transition: opacity 0.3s; }
+        #box-lid { transition: transform 0.5s ease-in-out; transform-origin: top; }
+        
+        /* Clipboard Styles */
+        .clipboard-line {
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.5s ease-out;
+            border-bottom: 2px dashed #cbd5e1;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+        .clipboard-line.visible { opacity: 1; transform: translateX(0); }
+
+        /* Sense Buttons */
+        .sense-btn {
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .sense-btn:active { transform: scale(0.95); }
+        .sense-btn.used {
+            opacity: 0.6;
+            transform: scale(0.95);
+            background-color: #e2e8f0;
+            border-color: #cbd5e1;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .sense-btn.used::after {
+            content: '✓';
+            position: absolute;
+            top: 5px; right: 5px;
+            background: #22c55e;
+            color: white;
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold;
+        }
+
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+    </style>
+</head>
+<body class="text-gray-800 pb-16">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="max-w-5xl mx-auto px-4 pt-6 space-y-8">
+        
+        <!-- HEADER -->
+        <div class="text-center bg-white p-6 rounded-3xl shadow-md border-b-4 border-fuchsia-500">
+            <h1 class="text-3xl md:text-4xl font-black text-fuchsia-700">Observation: The Mystery Box</h1>
+            <p class="text-xl text-gray-600 font-bold mt-1">(अवलोकन: रहस्यमयी बाकस)</p>
+            <p class="mt-2 text-sm font-bold text-fuchsia-400">Class 5 Science 🎒</p>
+        </div>
+
+        <!-- 1. OBJECTIVE SECTION -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-indigo-500">
+            <h2 class="text-2xl font-bold text-indigo-800 mb-3 flex items-center">
+                <span class="text-3xl mr-3">🎯</span> 1. Objective (उद्देश्य)
+            </h2>
+            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <p class="text-gray-800 font-bold text-lg mb-2">Why learn this? Our eyes can sometimes trick us. To be a real scientist, we must collect full "Data" by using ALL our senses!</p>
+                <div class="w-full h-px bg-indigo-200 my-2"></div>
+                <p class="text-indigo-900 font-medium text-md">हामी यो किन सिक्छौं? हाम्रा आँखाहरूले मात्र सधैं पूर्ण जानकारी दिँदैनन्। वास्तविक वैज्ञानिक बन्न, हामीले पूर्ण "तथ्याङ्क (Data)" सङ्कलन गर्न हाम्रा ५ वटै इन्द्रियहरू प्रयोग गर्नुपर्छ।</p>
+            </div>
+        </section>
+
+        <!-- 2. MAIN SIMULATION ARENA -->
+        <section class="bg-slate-800 rounded-3xl shadow-2xl p-6 md:p-8 border-t-8 border-amber-400 text-white relative overflow-hidden" id="sim-area">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📦</span> 2. What's in the Box? (बाकसभित्र के छ?)
+            </h2>
+            
+            <div class="flex flex-col md:flex-row gap-8">
+                
+                <!-- Left: The Visual Arena -->
+                <div class="flex-1 bg-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center relative min-h-[300px] border border-slate-600 shadow-inner">
+                    
+                    <!-- SVG Mystery Box -->
+                    <div id="box-container" class="relative w-48 h-48 z-10 transition-transform">
+                        
+                        <!-- Glow behind box -->
+                        <div id="box-glow" class="absolute inset-0 bg-yellow-400 rounded-full blur-2xl opacity-0 scale-150"></div>
+                        
+                        <!-- Box SVG -->
+                        <svg viewBox="0 0 200 200" class="w-full h-full relative z-20 drop-shadow-2xl" id="the-box">
+                            <!-- Box back interior -->
+                            <polygon points="40,60 160,60 180,80 20,80" fill="#78350f" />
+                            <!-- The hidden Lemon (revealed at end) -->
+                            <g id="hidden-lemon" class="opacity-0 transition-opacity duration-1000">
+                                <ellipse cx="100" cy="130" rx="40" ry="30" fill="#fde047" />
+                                <circle cx="65" cy="130" r="5" fill="#ca8a04" />
+                                <circle cx="135" cy="130" r="5" fill="#ca8a04" />
+                                <path d="M 85 130 Q 100 145 115 130" stroke="#ca8a04" stroke-width="3" fill="none" />
+                            </g>
+                            <!-- Box Body -->
+                            <polygon points="20,80 180,80 180,180 20,180" fill="#d97706" />
+                            <polygon points="20,80 40,60 40,160 20,180" fill="#b45309" />
+                            <polygon points="180,80 160,60 160,160 180,180" fill="#b45309" />
+                            <path d="M 100 80 L 100 180" stroke="#92400e" stroke-width="2" />
+                            <!-- Question Mark -->
+                            <text id="box-qmark" x="100" y="145" text-anchor="middle" font-size="60" font-weight="900" fill="#fef3c7" style="text-shadow: 2px 2px 0px #92400e;">?</text>
+                            <!-- Touch Hole -->
+                            <circle id="box-hole" cx="150" cy="130" r="15" fill="#451a03" />
+                            <!-- Box Lid (Top Flap) -->
+                            <polygon id="box-lid" points="20,80 180,80 160,60 40,60" fill="#f59e0b" />
+                        </svg>
+
+                        <!-- Scent Waves Animation (Hidden initially) -->
+                        <svg id="scent-waves" viewBox="0 0 100 100" class="absolute top-[-50px] left-1/2 transform -translate-x-1/2 w-24 h-24 hidden z-30 pointer-events-none">
+                            <path class="anim-scent" d="M30 100 Q10 70 30 50 T30 0" stroke="#4ade80" stroke-width="4" fill="none" style="animation-delay: 0s;" />
+                            <path class="anim-scent" d="M50 100 Q30 70 50 50 T50 0" stroke="#4ade80" stroke-width="4" fill="none" style="animation-delay: 0.3s;" />
+                            <path class="anim-scent" d="M70 100 Q50 70 70 50 T70 0" stroke="#4ade80" stroke-width="4" fill="none" style="animation-delay: 0.6s;" />
+                        </svg>
+
+                        <!-- Virtual Hand (Touch) -->
+                        <svg id="virtual-hand" viewBox="0 0 100 100" class="absolute top-[80px] right-[-80px] w-24 h-24 hidden z-30 pointer-events-none">
+                            <path d="M 50 50 C 30 30, 10 40, 20 60 C 30 80, 70 90, 80 70 C 90 50, 70 30, 50 50 Z" fill="#fcd34d" />
+                            <path d="M 20 60 Q 5 60 10 45" stroke="#fcd34d" stroke-width="8" stroke-linecap="round" />
+                            <path d="M 30 75 Q 15 80 20 65" stroke="#fcd34d" stroke-width="8" stroke-linecap="round" />
+                        </svg>
+
+                        <!-- Virtual Tongue (Taste) -->
+                        <div id="virtual-taste" class="absolute top-[20px] right-[-60px] w-32 h-32 hidden z-30 pointer-events-none flex flex-col items-center">
+                            <span class="text-5xl" id="taste-emoji">👅</span>
+                            <div class="bg-yellow-300 text-yellow-900 text-xs font-bold px-2 py-1 rounded mt-1 border border-yellow-500 shadow-lg">🍋 Lick!</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right: The Clipboard (Data Collection) -->
+                <div class="flex-1 bg-amber-50 rounded-2xl p-4 shadow-xl text-gray-800 border-t-[15px] border-gray-400 relative">
+                    <!-- Clip graphic -->
+                    <div class="absolute top-[-25px] left-1/2 transform -translate-x-1/2 w-16 h-8 bg-gray-300 border-2 border-gray-400 rounded-t-xl shadow-sm flex items-center justify-center">
+                        <div class="w-8 h-2 bg-gray-400 rounded-full"></div>
+                    </div>
+                    
+                    <h3 class="text-xl font-black text-amber-900 mt-2 mb-4 text-center border-b-2 border-amber-200 pb-2 flex justify-center items-center gap-2">
+                        📋 Observation Data 
+                    </h3>
+                    <p class="text-xs text-amber-700 text-center font-bold mb-4">(तथ्याङ्क सङ्कलन)</p>
+                    
+                    <ul id="clipboard-list" class="space-y-2 font-bold text-sm">
+                        <!-- Empty list to be filled by JS -->
+                        <li id="empty-state" class="text-center text-gray-400 italic mt-8">No data collected yet.<br>Click the sense buttons below!</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Action Buttons (The Senses) -->
+            <div class="mt-8">
+                <p class="text-center text-yellow-300 font-bold mb-3">Use your Sense Organs (इन्द्रियहरू प्रयोग गर्नुहोस्):</p>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="sense-buttons">
+                    
+                    <button onclick="useSense('sight', this)" class="sense-btn bg-white text-blue-600 border-b-4 border-blue-600 font-black py-3 px-2 rounded-xl flex flex-col items-center hover:bg-blue-50">
+                        <span class="text-3xl mb-1">👁️</span> Sight (दृष्टि)
+                    </button>
+                    
+                    <button onclick="useSense('hearing', this)" class="sense-btn bg-white text-purple-600 border-b-4 border-purple-600 font-black py-3 px-2 rounded-xl flex flex-col items-center hover:bg-purple-50">
+                        <span class="text-3xl mb-1">👂</span> Hearing (सुनाइ)
+                    </button>
+                    
+                    <button onclick="useSense('touch', this)" class="sense-btn bg-white text-orange-600 border-b-4 border-orange-600 font-black py-3 px-2 rounded-xl flex flex-col items-center hover:bg-orange-50">
+                        <span class="text-3xl mb-1">🖐️</span> Touch (स्पर्श)
+                    </button>
+                    
+                    <button onclick="useSense('smell', this)" class="sense-btn bg-white text-green-600 border-b-4 border-green-600 font-black py-3 px-2 rounded-xl flex flex-col items-center hover:bg-green-50">
+                        <span class="text-3xl mb-1">👃</span> Smell (गन्ध)
+                    </button>
+                    
+                    <button onclick="useSense('taste', this)" class="sense-btn bg-white text-red-600 border-b-4 border-red-600 font-black py-3 px-2 rounded-xl flex flex-col items-center hover:bg-red-50">
+                        <span class="text-3xl mb-1">👅</span> Taste (स्वाद)
+                    </button>
+                    
+                </div>
+            </div>
+
+            <!-- The Final Quiz Overlay (Hidden initially) -->
+            <div id="quiz-overlay" class="absolute inset-0 bg-slate-900/95 z-50 hidden flex-col items-center justify-center p-6 text-center backdrop-blur-sm">
+                <h3 class="text-3xl font-black text-yellow-400 mb-2 anim-pop">Based on your Observation...</h3>
+                <p class="text-xl text-white font-bold mb-8 anim-pop" style="animation-delay: 0.2s;">What is in the box? (बाकसभित्र के छ?)</p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 w-full max-w-2xl justify-center anim-pop" style="animation-delay: 0.4s;">
+                    <button onclick="guessItem('ball', this)" class="bg-white hover:bg-gray-100 text-gray-800 font-black py-4 px-6 rounded-2xl shadow-xl transform transition hover:scale-105 border-b-4 border-gray-300 flex flex-col items-center">
+                        <span class="text-5xl mb-2">🎾</span> Tennis Ball
+                    </button>
+                    <button onclick="guessItem('lemon', this)" class="bg-white hover:bg-yellow-100 text-yellow-700 font-black py-4 px-6 rounded-2xl shadow-xl transform transition hover:scale-105 border-b-4 border-yellow-300 flex flex-col items-center">
+                        <span class="text-5xl mb-2">🍋</span> A Lemon
+                    </button>
+                    <button onclick="guessItem('banana', this)" class="bg-white hover:bg-yellow-100 text-yellow-800 font-black py-4 px-6 rounded-2xl shadow-xl transform transition hover:scale-105 border-b-4 border-yellow-500 flex flex-col items-center">
+                        <span class="text-5xl mb-2">🍌</span> A Banana
+                    </button>
+                </div>
+                
+                <p id="wrong-msg" class="hidden mt-6 text-red-400 font-bold text-lg shake-err">Check your data again! Does a Tennis ball taste sour?</p>
+            </div>
+
+        </section>
+
+        <!-- 3. KEY WORDS TO REMEMBER -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-teal-500">
+            <h2 class="text-2xl font-bold text-teal-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📚</span> 3. Main Words (मुख्य शब्दहरू)
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                    <h4 class="font-black text-teal-900 text-lg">Observation (अवलोकन)</h4>
+                    <p class="text-sm text-teal-700 font-bold mt-2">Gathering information using your five senses.</p>
+                    <div class="h-px bg-teal-200 my-2"></div>
+                    <p class="text-xs text-teal-800 font-bold">आफ्ना पाँच इन्द्रियहरू प्रयोग गरेर जानकारी सङ्कलन गर्नु।</p>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                    <h4 class="font-black text-teal-900 text-lg">Data (तथ्याङ्क)</h4>
+                    <p class="text-sm text-teal-700 font-bold mt-2">The clues and facts you collect when you observe.</p>
+                    <div class="h-px bg-teal-200 my-2"></div>
+                    <p class="text-xs text-teal-800 font-bold">तपाईंले अवलोकन गर्दा सङ्कलन गरेका सुराक र तथ्यहरू।</p>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                    <h4 class="font-black text-teal-900 text-lg">Sense Organs</h4>
+                    <p class="text-sm text-teal-700 font-bold mt-2">Eyes, Ears, Nose, Tongue, and Skin.</p>
+                    <div class="h-px bg-teal-200 my-2"></div>
+                    <p class="text-xs text-teal-800 font-bold">(ज्ञानेन्द्रियहरू): आँखा, कान, नाक, जिब्रो र छाला।</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. CONCLUSION -->
+        <section id="conclusion-section" class="hidden bg-gradient-to-br from-green-500 to-emerald-700 rounded-3xl shadow-2xl p-8 text-center text-white anim-pop">
+            <h2 class="text-3xl font-black mb-4 text-yellow-300">You act like a true Scientist! 🏆</h2>
+            <div class="bg-black/20 p-6 rounded-2xl backdrop-blur-sm mx-auto max-w-3xl">
+                <p class="text-lg font-bold mb-3">English: "Good observation means taking your time! If we only used our eyes, we might have thought it was a yellow tennis ball. But by using touch, smell, and taste, we found the truth!"</p>
+                <div class="h-px w-full bg-white/20 my-3"></div>
+                <p class="text-md font-medium text-green-100">Nepali: "राम्रो अवलोकन भनेको समय लिएर जाँच्नु हो! यदि हामीले आँखा मात्र प्रयोग गरेको भए, यो पहेँलो टेनिस बल हो कि भन्ने लाग्न सक्थ्यो। तर छाला, नाक र जिब्रोको प्रयोगबाट हामीले सत्य पत्ता लगायौं!"</p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- AUDIO AND LOGIC SCRIPT -->
+    <script>
+        // --- Web Audio API Synth Engine ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'crack') {
+                // High short pop (sight)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'thump') {
+                // Low heavy kick (hearing)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.3);
+                gain.gain.setValueAtTime(1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+                // Double thump
+                setTimeout(() => playSound('thump-single'), 150);
+            } else if (type === 'thump-single') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+                gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'squish') {
+                // Touch
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(200, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'sniff') {
+                // Short noise burst (smell)
+                const bufferSize = audioCtx.sampleRate * 0.2; // 0.2 seconds
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                
+                // Filter the noise
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass'; filter.frequency.value = 1000;
+                noise.connect(filter); filter.connect(gain);
+                
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                noise.start(now);
+            } else if (type === 'sour') {
+                // Descending slide (taste)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(200, now + 0.5);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'tada') {
+                // Success chord
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); // C5
+                const osc2 = audioCtx.createOscillator(); osc2.type = 'sine'; osc2.frequency.setValueAtTime(659.25, now); // E5
+                const osc3 = audioCtx.createOscillator(); osc3.type = 'sine'; osc3.frequency.setValueAtTime(783.99, now); // G5
+                osc2.connect(gain); osc3.connect(gain);
+                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.1); gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+                osc.start(now); osc2.start(now); osc3.start(now);
+                osc.stop(now + 1.5); osc2.stop(now + 1.5); osc3.stop(now + 1.5);
+            } else if (type === 'buzzer') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+                gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        }
+
+        // --- Simulation Logic ---
+        let sensesUsedCount = 0;
+        const totalSenses = 5;
+
+        const clues = {
+            'sight': {
+                emoji: '👁️',
+                en: "It is yellow and oval-shaped.",
+                np: "यो पहेँलो र अण्डाकार छ।"
+            },
+            'hearing': {
+                emoji: '👂',
+                en: "Sounds heavy and soft, not like hard marbles.",
+                np: "यो गह्रौँ र नरम सुनिन्छ, कडा सिसाको गोली जस्तो होइन।"
+            },
+            'touch': {
+                emoji: '🖐️',
+                en: "The skin feels bumpy and slightly squishy.",
+                np: "यसको बोक्रा खस्रो र अलिकति नरम छ।"
+            },
+            'smell': {
+                emoji: '👃',
+                en: "It smells fresh, sharp, and fruity.",
+                np: "यसको गन्ध ताजा र फलफूल जस्तो छ।"
+            },
+            'taste': {
+                emoji: '👅',
+                en: "Yikes! Very sour!",
+                np: "ओहो! धेरै अमिलो!"
+            }
+        };
+
+        function useSense(senseType, btn) {
+            if (btn.classList.contains('used')) return;
+            
+            // Mark button used
+            btn.classList.add('used');
+            sensesUsedCount++;
+
+            // Handle specific animations & sounds
+            const box = document.getElementById('box-container');
+            
+            if (senseType === 'sight') {
+                playSound('crack');
+                document.getElementById('box-lid').style.transform = 'skewX(-10deg) translateY(-5px)';
+                document.getElementById('box-glow').style.opacity = '0.8';
+                setTimeout(() => {
+                    document.getElementById('box-lid').style.transform = 'skewX(0) translateY(0)';
+                    document.getElementById('box-glow').style.opacity = '0';
+                }, 1000);
+            } 
+            else if (senseType === 'hearing') {
+                playSound('thump');
+                box.classList.add('anim-shake');
+                setTimeout(() => box.classList.remove('anim-shake'), 600);
+            }
+            else if (senseType === 'touch') {
+                playSound('squish');
+                const hand = document.getElementById('virtual-hand');
+                hand.classList.remove('hidden');
+                hand.classList.add('anim-hand');
+                setTimeout(() => { hand.classList.add('hidden'); hand.classList.remove('anim-hand'); }, 2000);
+            }
+            else if (senseType === 'smell') {
+                playSound('sniff');
+                const waves = document.getElementById('scent-waves');
+                waves.classList.remove('hidden');
+                // Restart animation
+                waves.innerHTML = waves.innerHTML; 
+                setTimeout(() => waves.classList.add('hidden'), 2000);
+            }
+            else if (senseType === 'taste') {
+                playSound('sour');
+                const taste = document.getElementById('virtual-taste');
+                taste.classList.remove('hidden');
+                taste.classList.add('anim-pucker');
+                document.getElementById('taste-emoji').innerText = '😖'; // Sour face
+                setTimeout(() => { 
+                    taste.classList.add('hidden'); 
+                    taste.classList.remove('anim-pucker'); 
+                    document.getElementById('taste-emoji').innerText = '👅'; // Reset
+                }, 1500);
+            }
+
+            // Log Data to Clipboard
+            logData(senseType);
+
+            // Check if all collected
+            if (sensesUsedCount === totalSenses) {
+                setTimeout(showQuiz, 2000);
+            }
+        }
+
+        function logData(type) {
+            const list = document.getElementById('clipboard-list');
+            const emptyState = document.getElementById('empty-state');
+            if(emptyState) emptyState.remove();
+
+            const data = clues[type];
+            const li = document.createElement('li');
+            li.className = 'clipboard-line text-amber-900 bg-white/50 p-2 rounded';
+            li.innerHTML = `<span class="text-lg">${data.emoji}</span> <span class="font-black">${data.en}</span><br><span class="text-xs text-amber-700 ml-7">${data.np}</span>`;
+            
+            list.appendChild(li);
+            
+            // Trigger reflow for animation
+            void li.offsetWidth;
+            li.classList.add('visible');
+        }
+
+        function showQuiz() {
+            playSound('crack');
+            document.getElementById('box-glow').style.opacity = '1';
+            document.getElementById('quiz-overlay').classList.remove('hidden');
+            document.getElementById('quiz-overlay').classList.add('flex');
+        }
+
+        function guessItem(guess, btn) {
+            if (guess === 'lemon') {
+                // Correct!
+                playSound('tada');
+                document.getElementById('quiz-overlay').classList.add('hidden');
+                
+                // Burst the box
+                document.getElementById('the-box').classList.add('anim-burst');
+                document.getElementById('hidden-lemon').style.opacity = '1';
+                document.getElementById('hidden-lemon').style.transform = 'scale(2) translate(-30px, -20px)';
+                
+                // Show conclusion
+                document.getElementById('conclusion-section').classList.remove('hidden');
+                
+                fireConfetti();
+            } else {
+                // Wrong
+                playSound('buzzer');
+                btn.classList.add('shake-err', 'border-red-500');
+                const msg = document.getElementById('wrong-msg');
+                msg.classList.remove('hidden');
+                msg.classList.add('shake-err');
+                
+                setTimeout(() => {
+                    btn.classList.remove('shake-err', 'border-red-500');
+                    msg.classList.remove('shake-err');
+                }, 500);
+            }
+        }
+
+        // --- Confetti Engine ---
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#fde047', '#3b82f6', '#ef4444', '#10b981', '#a855f7'];
+
+            for(let i=0; i<100; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: (Math.random() - 1) * 20 - 5,
+                    size: Math.random() * 10 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 10
+                });
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+
+                particles.forEach(p => {
+                    p.vy += 0.4; // gravity
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.rot += p.rotSpeed;
+
+                    if(p.y < canvas.height) active = true;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                });
+
+                if(active) requestAnimationFrame(render);
+                else ctx.clearRect(0,0,canvas.width,canvas.height);
+            }
+            render();
+        }
+    </script>
+</body>
+</html>
+

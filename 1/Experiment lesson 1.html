@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Will It Dissolve? Virtual Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8fafc; /* Light gray-blue background */
+            overflow-x: hidden;
+        }
+
+        /* Lab Animations */
+        @keyframes shake-vigorous {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            10% { transform: translateX(-5px) rotate(-3deg); }
+            20% { transform: translateX(5px) rotate(3deg); }
+            30% { transform: translateX(-5px) rotate(-3deg); }
+            40% { transform: translateX(5px) rotate(3deg); }
+            50% { transform: translateX(-5px) rotate(-3deg); }
+            60% { transform: translateX(5px) rotate(3deg); }
+            70% { transform: translateX(-5px) rotate(-3deg); }
+            80% { transform: translateX(5px) rotate(3deg); }
+            90% { transform: translateX(-5px) rotate(-3deg); }
+        }
+        .anim-shake { animation: shake-vigorous 0.5s infinite; }
+
+        @keyframes bubble-rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-80px) scale(1.5); opacity: 0; }
+        }
+        .bubble {
+            animation: bubble-rise 1s infinite ease-in;
+            display: none;
+        }
+        .is-shaking .bubble { display: block; }
+
+        @keyframes pour {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-45deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .anim-pour { animation: pour 1s ease-in-out; }
+
+        /* Salt Behaviors */
+        .salt-cluster {
+            transition: all 2.5s ease-in-out;
+            opacity: 0; /* Hidden initially */
+            transform: translateY(0);
+        }
+        
+        .salt-visible { opacity: 1 !important; }
+        
+        /* Water: Salt dissolves (fades out) */
+        .salt-dissolve { opacity: 0 !important; }
+        
+        /* Oil: Salt sinks (moves to bottom, stays visible) */
+        .salt-sink { transform: translateY(110px) !important; opacity: 1 !important; }
+
+        /* General UI Animations */
+        @keyframes pop-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .disabled-btn { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    </style>
+</head>
+<body class="text-gray-800 pb-10">
+
+    <div class="max-w-4xl mx-auto px-4 py-6 space-y-8">
+
+        <header class="text-center">
+            <h1 class="text-4xl md:text-5xl font-black text-cyan-600 drop-shadow-sm mb-2">🧪 Will It Dissolve?</h1>
+            <p class="text-xl font-bold text-gray-600">Experiment Lesson</p>
+        </header>
+
+        <section class="bg-white rounded-3xl p-6 shadow-lg border-b-4 border-cyan-300">
+            <h2 class="text-2xl font-bold text-cyan-700 mb-4">🎯 Why do we need this? (हामीलाई यो किन चाहिन्छ?)</h2>
+            <div class="space-y-4 text-lg">
+                <div>
+                    <p class="font-bold text-gray-800">Why:</p>
+                    <p>Some questions can't be answered just by looking. We have to actually test them with an <strong>experiment (प्रयोग)</strong> to see what happens!</p>
+                    <p class="text-gray-600 text-base border-l-4 border-cyan-400 pl-3 mt-1 bg-cyan-50 p-2 rounded-r-lg">केही प्रश्नहरूको उत्तर हेरेर मात्र दिन सकिँदैन। के हुन्छ भनेर हेर्न हामीले वास्तवमै परीक्षण गर्नुपर्छ!</p>
+                </div>
+                <div>
+                    <p class="font-bold text-gray-800">Where it is used:</p>
+                    <p>When making sweet tea (knowing sugar dissolves in water) or when washing oily hands (knowing water alone won't wash away oil).</p>
+                    <p class="text-gray-600 text-base border-l-4 border-cyan-400 pl-3 mt-1 bg-cyan-50 p-2 rounded-r-lg">गुलियो चिया बनाउँदा (चिनी पानीमा घुल्छ भनेर थाहा पाउन) वा चिल्लो हात धुँदा (पानीले मात्र चिल्लो जाँदैन भनेर बुझ्न)।</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-slate-800 rounded-3xl p-4 md:p-8 shadow-2xl relative min-h-[450px] flex flex-col items-center">
+            
+            <h2 class="text-2xl font-bold text-white mb-6 text-center w-full">The Solubility Experiment</h2>
+
+            <div class="flex flex-col md:flex-row items-center justify-center gap-12 w-full max-w-2xl relative z-10">
+                
+                <div class="flex flex-col items-center">
+                    <div class="text-white font-bold mb-2 text-lg">💧 Water (पानी)</div>
+                    <div id="tube-water" class="relative w-24 h-64 flex justify-center origin-bottom">
+                        <svg viewBox="0 0 60 160" class="w-full h-full drop-shadow-lg z-10">
+                            <path d="M10,40 L10,140 Q10,150 30,150 Q50,150 50,140 L50,40 Z" fill="#3b82f6" fill-opacity="0.6"/>
+                            <path d="M10,10 L10,140 Q10,150 30,150 Q50,150 50,140 L50,10" fill="none" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round"/>
+                            <ellipse cx="30" cy="10" rx="20" ry="5" fill="none" stroke="#e2e8f0" stroke-width="4"/>
+                            
+                            <circle cx="20" cy="130" r="2" fill="white" class="bubble" style="animation-delay: 0s;"/>
+                            <circle cx="40" cy="120" r="3" fill="white" class="bubble" style="animation-delay: 0.2s;"/>
+                            <circle cx="30" cy="140" r="2" fill="white" class="bubble" style="animation-delay: 0.4s;"/>
+                            
+                            <g id="salt-water" class="salt-cluster">
+                                <rect x="25" y="45" width="2" height="2" fill="white"/>
+                                <rect x="32" y="48" width="3" height="3" fill="white"/>
+                                <rect x="20" y="52" width="2" height="2" fill="white"/>
+                                <rect x="38" y="50" width="2" height="2" fill="white"/>
+                                <rect x="28" y="55" width="3" height="3" fill="white"/>
+                                <rect x="22" y="47" width="2" height="2" fill="white"/>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center gap-6 z-20">
+                    <button id="add-salt-btn" class="bg-white hover:bg-gray-100 text-slate-800 font-bold py-3 px-6 rounded-full shadow-lg transform transition hover:scale-105 flex flex-col items-center group w-40">
+                        <span id="spoon-icon" class="text-4xl mb-1 transform origin-bottom-right transition-transform group-hover:-rotate-12">🥄</span>
+                        <span>1. Add Salt</span>
+                    </button>
+
+                    <button id="shake-btn" class="bg-green-500 hover:bg-green-400 text-white font-black py-4 px-8 rounded-full shadow-xl text-xl disabled-btn transition-transform w-40 text-center">
+                        2. SHAKE! 🌪️
+                    </button>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <div class="text-white font-bold mb-2 text-lg">🛢️ Cooking Oil (तेल)</div>
+                    <div id="tube-oil" class="relative w-24 h-64 flex justify-center origin-bottom">
+                        <svg viewBox="0 0 60 160" class="w-full h-full drop-shadow-lg z-10">
+                            <path d="M10,40 L10,140 Q10,150 30,150 Q50,150 50,140 L50,40 Z" fill="#eab308" fill-opacity="0.8"/>
+                            <path d="M10,10 L10,140 Q10,150 30,150 Q50,150 50,140 L50,10" fill="none" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round"/>
+                            <ellipse cx="30" cy="10" rx="20" ry="5" fill="none" stroke="#e2e8f0" stroke-width="4"/>
+                            
+                            <g id="salt-oil" class="salt-cluster">
+                                <rect x="25" y="45" width="3" height="3" fill="#f8fafc"/>
+                                <rect x="32" y="48" width="4" height="4" fill="#f8fafc"/>
+                                <rect x="20" y="52" width="3" height="3" fill="#f8fafc"/>
+                                <rect x="38" y="50" width="3" height="3" fill="#f8fafc"/>
+                                <rect x="28" y="55" width="4" height="4" fill="#f8fafc"/>
+                                <rect x="22" y="47" width="3" height="3" fill="#f8fafc"/>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-0 left-0 w-full h-8 bg-slate-900 rounded-b-3xl"></div>
+        </section>
+
+        <div id="conclusion-box" class="hidden">
+            <section class="bg-yellow-50 rounded-3xl p-6 shadow-lg border-l-8 border-yellow-400 text-center animate-pop">
+                <h2 class="text-3xl font-black text-yellow-600 mb-4">🎉 Conclusion (निष्कर्ष)</h2>
+                
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-yellow-200 mb-4 inline-block text-left w-full max-w-2xl mx-auto">
+                    <p class="text-xl text-gray-800 font-semibold mb-2 text-center">
+                        "You did it! You discovered that salt dissolves completely in water, but it just sinks in the oil!"
+                    </p>
+                    <p class="text-lg text-gray-600 text-center">
+                        "तपाईंले गर्नुभयो! तपाईंले पत्ता लगाउनुभयो कि नुन पानीमा पूर्ण रूपमा घुल्छ, तर तेलमा यो तल बस्छ!"
+                    </p>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-yellow-200 mb-4 inline-block text-left w-full max-w-2xl mx-auto">
+                    <p class="text-lg text-gray-800 font-medium text-center mb-2">
+                        When we can't find an answer just by looking, we do an <strong class="text-cyan-700 text-xl">experiment</strong> to uncover the secret!
+                    </p>
+                    <p class="text-md text-gray-600 text-center">
+                        जब हामी हेरेर मात्र उत्तर पाउन सक्दैनौं, हामी रहस्य पत्ता लगाउन एउटा <strong class="text-cyan-700">प्रयोग (Experiment)</strong> गर्छौं!
+                    </p>
+                </div>
+                
+                <button onclick="resetLab()" class="mt-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform hover:scale-105 text-lg">
+                    Reset Lab (फेरि सुरु गर्नुहोस्)
+                </button>
+            </section>
+        </div>
+
+        <section class="bg-indigo-50 rounded-3xl p-6 shadow-lg border-b-4 border-indigo-200">
+            <h2 class="text-2xl font-bold text-indigo-800 mb-4">📚 Important Words to Know</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow border border-indigo-100 flex flex-col">
+                    <div class="text-xl font-bold text-indigo-800">Experiment</div>
+                    <div class="text-lg font-bold text-cyan-600 mb-2">प्रयोग (Prayog)</div>
+                    <p class="text-gray-600 mt-auto">A hands-on test we do in real life to see if our ideas are correct or wrong.</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow border border-indigo-100 flex flex-col">
+                    <div class="text-xl font-bold text-indigo-800">Inquiry</div>
+                    <div class="text-lg font-bold text-cyan-600 mb-2">खोजतलास (Khojtalas)</div>
+                    <p class="text-gray-600 mt-auto">Asking curious questions and actively searching for the answers.</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow border border-indigo-100 flex flex-col">
+                    <div class="text-xl font-bold text-indigo-800">Solubility</div>
+                    <div class="text-lg font-bold text-cyan-600 mb-2">घुलनशीलता (Ghulanshilta)</div>
+                    <p class="text-gray-600 mt-auto">The ability of a substance (like salt or sugar) to melt or 'dissolve' into a liquid.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const btnAddSalt = document.getElementById('add-salt-btn');
+        const btnShake = document.getElementById('shake-btn');
+        
+        const tubeWater = document.getElementById('tube-water');
+        const tubeOil = document.getElementById('tube-oil');
+        
+        const saltWater = document.getElementById('salt-water');
+        const saltOil = document.getElementById('salt-oil');
+        
+        const conclusionBox = document.getElementById('conclusion-box');
+
+        // Sound System (Web Audio API)
+        function playSound(type) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                if (type === 'pour') {
+                    const bufferSize = audioCtx.sampleRate * 0.5;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+                    const gainNode = audioCtx.createGain();
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'highpass';
+                    filter.frequency.value = 2000;
+
+                    noise.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    noise.start();
+                } else if (type === 'shake') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                    osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                    
+                    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'success') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                    
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 1);
+                }
+            } catch(e) {}
+        }
+
+        // Step 1: Add Salt Action
+        btnAddSalt.addEventListener('click', () => {
+            // Dynamically grab the spoon icon so it works even after resetLab rewrites the innerHTML
+            const currentSpoonIcon = document.getElementById('spoon-icon');
+            
+            playSound('pour');
+            if(currentSpoonIcon) {
+                currentSpoonIcon.classList.add('anim-pour');
+            }
+            
+            // Show salt in tubes after a short delay to match animation
+            setTimeout(() => {
+                saltWater.classList.add('salt-visible');
+                saltOil.classList.add('salt-visible');
+                
+                // Enable shake button, disable salt button
+                btnAddSalt.classList.add('disabled-btn');
+                btnAddSalt.innerHTML = '<span class="text-2xl">✔️ Added</span>';
+                
+                btnShake.classList.remove('disabled-btn');
+                btnShake.classList.add('hover:scale-110');
+            }, 500);
+
+            setTimeout(() => {
+                const iconToCheck = document.getElementById('spoon-icon');
+                if(iconToCheck) {
+                    iconToCheck.classList.remove('anim-pour');
+                }
+            }, 1000);
+        });
+
+        // Step 2: Shake Action
+        btnShake.addEventListener('click', () => {
+            btnShake.classList.add('disabled-btn');
+            btnShake.classList.remove('hover:scale-110');
+            
+            // Start shaking animation
+            tubeWater.classList.add('anim-shake', 'is-shaking');
+            tubeOil.classList.add('anim-shake');
+            
+            // Play shake sound multiple times
+            let shakeInterval = setInterval(() => playSound('shake'), 250);
+
+            // Stop shaking after 2 seconds and reveal results
+            setTimeout(() => {
+                clearInterval(shakeInterval);
+                tubeWater.classList.remove('anim-shake', 'is-shaking');
+                tubeOil.classList.remove('anim-shake');
+                
+                // Trigger Solubility behaviors
+                saltWater.classList.add('salt-dissolve'); // Fades out
+                saltOil.classList.add('salt-sink');       // Sinks to bottom
+                
+                // Show conclusion slightly after animations start
+                setTimeout(() => {
+                    playSound('success');
+                    conclusionBox.classList.remove('hidden');
+                }, 1000);
+
+            }, 2000);
+        });
+
+        // Reset Lab
+        function resetLab() {
+            // Hide Conclusion
+            conclusionBox.classList.add('hidden');
+            
+            // Reset Add Salt Button
+            btnAddSalt.classList.remove('disabled-btn');
+            btnAddSalt.innerHTML = `<span id="spoon-icon" class="text-4xl mb-1 transform origin-bottom-right transition-transform group-hover:-rotate-12">🥄</span><span>1. Add Salt</span>`;
+            
+            // Reset Shake Button
+            btnShake.classList.add('disabled-btn');
+            btnShake.classList.remove('hover:scale-110');
+            
+            // Reset SVG classes for salt
+            saltWater.classList.remove('salt-visible', 'salt-dissolve');
+            saltOil.classList.remove('salt-visible', 'salt-sink');
+        }
+    </script>
+</body>
+</html>

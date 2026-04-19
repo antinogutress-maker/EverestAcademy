@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Experiment (प्रयोग) - Science Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #eff6ff; /* Light blue background */
+        }
+
+        /* SVG Elements and Animations */
+        #game-area {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+
+        /* Wood Pattern */
+        .wood-pattern {
+            background-color: #d97706;
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                #b45309 10px,
+                #b45309 20px
+            );
+        }
+
+        /* Ice Pattern */
+        .ice-pattern {
+            background: linear-gradient(135deg, #e0f2fe 25%, #bae6fd 25%, #bae6fd 50%, #e0f2fe 50%, #e0f2fe 75%, #bae6fd 75%, #bae6fd 100%);
+            background-size: 40px 40px;
+        }
+
+        /* Sand Pattern */
+        .sand-pattern {
+            background-color: #fde047;
+            background-image: radial-gradient(#ca8a04 15%, transparent 16%), radial-gradient(#ca8a04 15%, transparent 16%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        /* Car Styling inside SVG */
+        .car {
+            filter: drop-shadow(3px 5px 4px rgba(0,0,0,0.4));
+            transition: transform 0.1s linear;
+        }
+
+        /* Scoreboard Animation */
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Button Pulse */
+        @keyframes pulse-btn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse-active {
+            animation: pulse-btn 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="text-gray-800 pb-12">
+
+    <div class="max-w-4xl mx-auto px-4 pt-6">
+        
+        <!-- Header Section -->
+        <header class="bg-white rounded-2xl shadow-lg p-6 mb-6 border-l-8 border-blue-500">
+            <h1 class="text-3xl md:text-4xl font-black text-blue-700 mb-2">Experiment (प्रयोग)</h1>
+            
+            <div class="space-y-4 mt-4">
+                <div class="bg-blue-50 p-4 rounded-xl">
+                    <h2 class="font-bold text-blue-800 text-lg">🎯 Objective / उद्देश्य:</h2>
+                    <p class="text-gray-700 mt-1"><strong>English:</strong> Why do it? Because looking isn't enough! We must test things to prove if our smart guesses are true.</p>
+                    <p class="text-gray-700 font-medium text-lg mt-1"><strong>Nepali:</strong> यो किन गर्ने? किनभने हेरेर मात्र पुग्दैन! हाम्रो अनुमान सही छ कि छैन भनेर प्रमाणित गर्न हामीले परीक्षण गर्नुपर्छ।</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Simulation Section -->
+        <div class="bg-white rounded-2xl shadow-xl border-4 border-gray-200 overflow-hidden">
+            
+            <!-- Game Controls -->
+            <div class="bg-slate-800 p-4 text-white">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    
+                    <div class="text-center md:text-left">
+                        <h3 class="font-bold text-yellow-400 text-xl">🏁 The Ramp Race (र्‍याम्प रेस)</h3>
+                        <p class="text-sm text-gray-300">Set your variable (चर) below, then race!</p>
+                    </div>
+
+                    <!-- Variable Selector -->
+                    <div class="flex flex-col sm:flex-row items-center gap-3 bg-slate-700 p-3 rounded-xl border border-slate-600">
+                        <span class="font-bold text-sm text-slate-300 uppercase tracking-wide">Ramp B Surface:</span>
+                        <div class="flex gap-2">
+                            <button id="btn-ice" onclick="setSurface('ice')" class="bg-sky-200 hover:bg-sky-300 text-sky-900 font-bold py-2 px-4 rounded-lg shadow transition border-2 border-sky-400 transform hover:scale-105 active:scale-95">
+                                🧊 Ice (बरफ)
+                            </button>
+                            <button id="btn-sand" onclick="setSurface('sand')" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 font-bold py-2 px-4 rounded-lg shadow transition border-2 border-transparent transform hover:scale-105 active:scale-95">
+                                🏜️ Sand (बालुवा)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The Ramps (Canvas) -->
+            <div id="game-area" class="w-full h-[350px] relative bg-slate-100 flex flex-col">
+                
+                <!-- SVG Tracks (Top-Down View of a Slope) -->
+                <svg width="100%" height="100%" viewBox="0 0 1000 350" preserveAspectRatio="none" class="absolute inset-0 z-0">
+                    <!-- Finish Line Shadow -->
+                    <rect x="850" y="0" width="150" height="350" fill="#cbd5e1" />
+                    
+                    <!-- Track A (Control - Always Wood) -->
+                    <g id="trackA">
+                        <!-- Path base handled by CSS class -->
+                        <foreignObject x="0" y="20" width="1000" height="130">
+                            <div class="w-full h-full wood-pattern border-y-4 border-amber-900 shadow-inner"></div>
+                        </foreignObject>
+                        <!-- Labels -->
+                        <text x="20" y="50" font-size="24" font-weight="bold" fill="#ffffff" style="text-shadow: 2px 2px 0 #000;">Ramp A (Wood / काठ)</text>
+                        <text x="20" y="75" font-size="16" fill="#fde047" style="text-shadow: 1px 1px 0 #000;">Control (नियन्त्रण)</text>
+                    </g>
+
+                    <!-- Track B (Variable) -->
+                    <g id="trackB">
+                        <foreignObject x="0" y="180" width="1000" height="130">
+                            <div id="trackB-visual" class="w-full h-full ice-pattern border-y-4 border-slate-400 shadow-inner transition-all duration-500"></div>
+                        </foreignObject>
+                        <!-- Labels -->
+                        <text x="20" y="210" font-size="24" font-weight="bold" fill="#1e293b" style="text-shadow: 1px 1px 0 #fff;">Ramp B (<span id="trackB-label">Ice / बरफ</span>)</text>
+                        <text x="20" y="235" font-size="16" font-weight="bold" fill="#dc2626" style="text-shadow: 1px 1px 0 #fff;">Variable (चर)</text>
+                    </g>
+
+                    <!-- Start Line -->
+                    <rect x="100" y="0" width="10" height="350" fill="#ffffff" />
+                    <rect x="110" y="0" width="10" height="350" fill="#000000" />
+
+                    <!-- Finish Line (Checkered) -->
+                    <foreignObject x="850" y="0" width="40" height="350">
+                        <div class="w-full h-full" style="background-image: conic-gradient(#000 90deg, #fff 90deg 180deg, #000 180deg 270deg, #fff 270deg); background-size: 20px 20px;"></div>
+                    </foreignObject>
+                    <text x="860" y="175" font-size="30" font-weight="900" fill="#ef4444" transform="rotate(-90 860,175)" style="text-shadow: 2px 2px 0 #fff;">FINISH</text>
+
+                    <!-- Downhill Indicator Arrow -->
+                    <path d="M 400 160 L 600 160 L 580 145 M 600 160 L 580 175" stroke="#94a3b8" stroke-width="8" fill="none" opacity="0.6"/>
+                    <text x="430" y="150" font-size="20" font-weight="bold" fill="#64748b" opacity="0.8">Slope Down / ओरालो ➔</text>
+                </svg>
+
+                <!-- The Cars (HTML Overlays for easy translation/styling) -->
+                <!-- Car A (Red) -->
+                <div id="carA" class="car absolute top-[50px] left-[30px] w-[120px] h-[70px] z-10 flex items-center justify-center">
+                    <svg viewBox="0 0 120 70" width="100%" height="100%">
+                        <!-- Wheels -->
+                        <rect x="20" y="5" width="25" height="10" rx="3" fill="#1f2937" />
+                        <rect x="75" y="5" width="25" height="10" rx="3" fill="#1f2937" />
+                        <rect x="20" y="55" width="25" height="10" rx="3" fill="#1f2937" />
+                        <rect x="75" y="55" width="25" height="10" rx="3" fill="#1f2937" />
+                        <!-- Body -->
+                        <path d="M 10 15 L 100 15 C 110 15 115 25 115 35 C 115 45 110 55 100 55 L 10 55 C 5 55 0 50 0 45 L 0 25 C 0 20 5 15 10 15 Z" fill="#ef4444" />
+                        <!-- Windows -->
+                        <polygon points="40,20 85,20 95,35 40,35" fill="#93c5fd" />
+                        <polygon points="40,50 85,50 95,35 40,35" fill="#93c5fd" />
+                        <!-- Racing Stripe & Number -->
+                        <rect x="15" y="32" width="95" height="6" fill="#ffffff" />
+                        <text x="20" y="42" font-family="Arial" font-weight="bold" font-size="20" fill="#ffffff">A</text>
+                    </svg>
+                </div>
+
+                <!-- Car B (Green) -->
+                <div id="carB" class="car absolute top-[210px] left-[30px] w-[120px] h-[70px] z-10 flex items-center justify-center">
+                    <svg viewBox="0 0 120 70" width="100%" height="100%">
+                        <!-- Wheels -->
+                        <rect x="20" y="5" width="25" height="10" rx="3" fill="#1f2937" />
+                        <rect x="75" y="5" width="25" height="10" rx="3" fill="#1f2937" />
+                        <rect x="20" y="55" width="25" height="10" rx="3" fill="#1f2937" />
+                        <rect x="75" y="55" width="25" height="10" rx="3" fill="#1f2937" />
+                        <!-- Body -->
+                        <path d="M 10 15 L 100 15 C 110 15 115 25 115 35 C 115 45 110 55 100 55 L 10 55 C 5 55 0 50 0 45 L 0 25 C 0 20 5 15 10 15 Z" fill="#22c55e" />
+                        <!-- Windows -->
+                        <polygon points="40,20 85,20 95,35 40,35" fill="#93c5fd" />
+                        <polygon points="40,50 85,50 95,35 40,35" fill="#93c5fd" />
+                        <!-- Racing Stripe & Number -->
+                        <rect x="15" y="32" width="95" height="6" fill="#ffffff" />
+                        <text x="20" y="42" font-family="Arial" font-weight="bold" font-size="20" fill="#ffffff">B</text>
+                    </svg>
+                </div>
+
+            </div>
+
+            <!-- Action Area -->
+            <div class="bg-gray-50 border-t-2 border-gray-200 p-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="race-btn" onclick="startRace()" class="pulse-active bg-red-600 hover:bg-red-700 text-white font-black text-2xl py-3 px-12 rounded-full shadow-xl transform transition hover:scale-105 active:scale-95 border-b-4 border-red-800 w-full sm:w-auto">
+                    RACE! (रेस सुरु गर्नुहोस्!)
+                </button>
+                <button id="reset-btn" onclick="resetRace()" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold text-xl py-3 px-8 rounded-full shadow-lg transition w-full sm:w-auto">
+                    Reset (रिसेट)
+                </button>
+            </div>
+
+            <!-- Scoreboard (Hidden until race finishes) -->
+            <div id="scoreboard" class="hidden bg-slate-800 text-white p-6 border-t-4 border-slate-900">
+                <div class="flex flex-col items-center text-center">
+                    <span id="winner-emoji" class="text-6xl mb-2">🏆</span>
+                    <h2 id="winner-title" class="text-3xl font-black mb-2 text-yellow-400">Car B Wins!</h2>
+                    <div class="bg-slate-700 p-4 rounded-xl border border-slate-600 max-w-2xl w-full">
+                        <p id="winner-desc-en" class="text-lg font-bold text-sky-200 mb-2">Because Ice has very low friction, Car B sped past Car A!</p>
+                        <p id="winner-desc-np" class="text-md text-sky-100 font-medium">बरफमा घर्षण (friction) धेरै कम हुने भएकाले, कार B कार A भन्दा छिटो कुद्यो!</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Vocabulary & Conclusion Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            
+            <!-- Key Words -->
+            <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-emerald-500">
+                <h3 class="text-xl font-bold text-emerald-800 mb-4 flex items-center">
+                    <span class="text-2xl mr-2">🧠</span> Main Words to Remember
+                </h3>
+                <ul class="space-y-4">
+                    <li class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                        <strong class="text-emerald-700 block text-lg">Experiment (प्रयोग):</strong>
+                        <span class="text-gray-700">A fair test to find the truth.</span><br>
+                        <span class="text-gray-600 font-medium text-sm">सत्य पत्ता लगाउन गरिने निष्पक्ष परीक्षण।</span>
+                    </li>
+                    <li class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                        <strong class="text-emerald-700 block text-lg">Variable (चर):</strong>
+                        <span class="text-gray-700">The ONE thing you change in the test (like changing the track to sand).</span><br>
+                        <span class="text-gray-600 font-medium text-sm">परीक्षणमा परिवर्तन गरिने एउटै कुरा, जस्तै बाटोमा बालुवा राख्नु।</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-orange-500 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-orange-800 mb-4 flex items-center">
+                    <span class="text-2xl mr-2">🔬</span> Conclusion / निष्कर्ष
+                </h3>
+                <div class="bg-orange-50 p-5 rounded-xl border border-orange-100">
+                    <p class="text-gray-800 text-lg mb-3"><strong>English:</strong> Experiments help us test our ideas. By changing just one variable (like the surface), we can see exactly what causes the cars to speed up or slow down!</p>
+                    <div class="w-full h-px bg-orange-200 my-3"></div>
+                    <p class="text-gray-800 text-lg font-medium"><strong>Nepali:</strong> प्रयोगहरूले हाम्रो विचार परीक्षण गर्न मद्दत गर्छन्। केवल एउटा चर (जस्तै सतह) परिवर्तन गरेर, कुन कुराले गाडीको गति बढाउँछ वा घटाउँछ भनेर हामी ठ्याक्कै देख्न सक्छौं!</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Physics & Logic Script -->
+    <script>
+        // State variables
+        let currentSurface = 'ice';
+        let isRacing = false;
+        let animationFrameId;
+
+        // DOM Elements
+        const btnIce = document.getElementById('btn-ice');
+        const btnSand = document.getElementById('btn-sand');
+        const trackBVisual = document.getElementById('trackB-visual');
+        const trackBLabel = document.getElementById('trackB-label');
+        const carA = document.getElementById('carA');
+        const carB = document.getElementById('carB');
+        const raceBtn = document.getElementById('race-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const scoreboard = document.getElementById('scoreboard');
+        
+        // Results DOM
+        const winTitle = document.getElementById('winner-title');
+        const winDescEn = document.getElementById('winner-desc-en');
+        const winDescNp = document.getElementById('winner-desc-np');
+
+        // Physics Constants (Simplified)
+        // Values tune acceleration and max speed based on 'friction'
+        const physics = {
+            wood: { accel: 0.15, maxSpeed: 6.5, drag: 0.98 },
+            ice:  { accel: 0.22, maxSpeed: 9.0, drag: 0.99 },
+            sand: { accel: 0.06, maxSpeed: 2.0, drag: 0.85 } // Sand has high drag/low accel
+        };
+
+        // Car Objects
+        let racerA = { el: carA, x: 30, v: 0, surface: 'wood' };
+        let racerB = { el: carB, x: 30, v: 0, surface: 'ice' };
+
+        const finishLineX = window.innerWidth < 768 ? 600 : 750; // Adjust for mobile scaling slightly
+
+        // Toggle Variable (Surface)
+        function setSurface(type) {
+            if (isRacing) return; // Prevent changing during race
+            
+            currentSurface = type;
+            racerB.surface = type;
+
+            // UI Updates
+            if (type === 'ice') {
+                btnIce.classList.add('border-sky-400', 'bg-sky-200');
+                btnIce.classList.remove('border-transparent', 'bg-slate-200');
+                btnSand.classList.remove('border-yellow-500', 'bg-yellow-200');
+                btnSand.classList.add('border-transparent', 'bg-slate-200');
+                
+                trackBVisual.className = "w-full h-full ice-pattern border-y-4 border-sky-300 shadow-inner transition-all duration-500";
+                trackBLabel.innerText = "Ice / बरफ";
+                trackBLabel.setAttribute('fill', '#0284c7');
+            } else {
+                btnSand.classList.add('border-yellow-500', 'bg-yellow-200');
+                btnSand.classList.remove('border-transparent', 'bg-slate-200');
+                btnIce.classList.remove('border-sky-400', 'bg-sky-200');
+                btnIce.classList.add('border-transparent', 'bg-slate-200');
+
+                trackBVisual.className = "w-full h-full sand-pattern border-y-4 border-yellow-600 shadow-inner transition-all duration-500";
+                trackBLabel.innerText = "Sand / बालुवा";
+                trackBLabel.setAttribute('fill', '#a16207');
+            }
+        }
+
+        // Initialize default UI
+        setSurface('ice');
+
+        function startRace() {
+            if (isRacing) return;
+            
+            isRacing = true;
+            scoreboard.classList.add('hidden');
+            scoreboard.classList.remove('animate-slide-in');
+            raceBtn.classList.remove('pulse-active');
+            raceBtn.innerText = "RACING... 🏎️";
+            raceBtn.disabled = true;
+            raceBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // Disable surface buttons
+            btnIce.disabled = true; btnSand.disabled = true;
+            btnIce.classList.add('opacity-50'); btnSand.classList.add('opacity-50');
+
+            // Start Animation Loop
+            lastTime = performance.now();
+            requestAnimationFrame(raceLoop);
+        }
+
+        function raceLoop(time) {
+            if (!isRacing) return;
+
+            // Update Car A (Wood)
+            let pA = physics[racerA.surface];
+            racerA.v += pA.accel;
+            racerA.v *= pA.drag;
+            if (racerA.v > pA.maxSpeed) racerA.v = pA.maxSpeed;
+            racerA.x += racerA.v;
+
+            // Update Car B (Variable)
+            let pB = physics[racerB.surface];
+            racerB.v += pB.accel;
+            racerB.v *= pB.drag;
+            if (racerB.v > pB.maxSpeed) racerB.v = pB.maxSpeed;
+            racerB.x += racerB.v;
+
+            // Apply transforms
+            racerA.el.style.transform = `translateX(${racerA.x}px)`;
+            racerB.el.style.transform = `translateX(${racerB.x}px)`;
+
+            // Check Win Condition
+            // Calculate relative % of screen to handle mobile viewing accurately
+            let containerWidth = document.getElementById('game-area').clientWidth;
+            // The finish line visually in SVG is around 85% of the SVG width (850 out of 1000)
+            let finishPoint = containerWidth * 0.80; 
+
+            if (racerA.x >= finishPoint || racerB.x >= finishPoint) {
+                isRacing = false;
+                declareWinner(racerA.x >= finishPoint ? 'A' : 'B');
+                return;
+            }
+
+            animationFrameId = requestAnimationFrame(raceLoop);
+        }
+
+        function declareWinner(winner) {
+            scoreboard.classList.remove('hidden');
+            scoreboard.classList.add('animate-slide-in');
+            
+            raceBtn.classList.add('hidden');
+            resetBtn.classList.remove('hidden');
+
+            if (winner === 'B') {
+                winTitle.innerText = "🟢 Car B Wins! (कार B ले जित्यो!)";
+                winTitle.className = "text-3xl font-black mb-2 text-green-400";
+                winDescEn.innerText = "Experiment Result: Because ICE has very low friction, Car B went much faster than the control Car A!";
+                winDescNp.innerText = "प्रयोगको नतिजा: बरफमा घर्षण (friction) धेरै कम हुने भएकाले, कार B नियन्त्रित कार A भन्दा धेरै छिटो कुद्यो!";
+            } else {
+                winTitle.innerText = "🔴 Car A Wins! (कार A ले जित्यो!)";
+                winTitle.className = "text-3xl font-black mb-2 text-red-400";
+                winDescEn.innerText = "Experiment Result: Because SAND has very high friction, it trapped Car B. The control Car A won easily!";
+                winDescNp.innerText = "प्रयोगको नतिजा: बालुवामा घर्षण धेरै हुने भएकाले यसले कार B लाई रोक्यो। नियन्त्रित कार A ले सजिलै जित्यो!";
+            }
+        }
+
+        function resetRace() {
+            // Reset state
+            racerA.x = 30; racerA.v = 0;
+            racerB.x = 30; racerB.v = 0;
+            
+            racerA.el.style.transform = `translateX(30px)`;
+            racerB.el.style.transform = `translateX(30px)`;
+
+            scoreboard.classList.add('hidden');
+            scoreboard.classList.remove('animate-slide-in');
+            
+            resetBtn.classList.add('hidden');
+            raceBtn.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+            raceBtn.classList.add('pulse-active');
+            raceBtn.innerText = "RACE! (रेस सुरु गर्नुहोस्!)";
+            raceBtn.disabled = false;
+
+            // Re-enable surface buttons
+            btnIce.disabled = false; btnSand.disabled = false;
+            btnIce.classList.remove('opacity-50'); btnSand.classList.remove('opacity-50');
+        }
+    </script>
+</body>
+</html>
+
