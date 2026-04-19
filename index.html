@@ -1,0 +1,231 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everest Academy School</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top left, #1e293b, #0f172a);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Animated School Name */
+        @keyframes hueCycle {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        .school-name span {
+            display: inline-block;
+            animation: float 3s ease-in-out infinite alternate;
+        }
+
+        .everest { color: #ff5e62; text-shadow: 0 0 15px rgba(255,94,98,0.4); }
+        .academy { color: #00f2fe; text-shadow: 0 0 15px rgba(0,242,254,0.4); }
+        .school { color: #f9d423; text-shadow: 0 0 15px rgba(249,212,35,0.4); }
+
+        @keyframes float {
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
+        }
+
+        /* Slogan Animation */
+        .slogan-text {
+            background: linear-gradient(90deg, #ff8a00, #e52e71, #00f2fe, #ff8a00);
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientFlow 4s linear infinite;
+        }
+
+        @keyframes gradientFlow {
+            to { background-position: 300% center; }
+        }
+
+        /* Image Frame Effects */
+        .photo-frame {
+            position: relative;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            border-radius: 30px;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            border-radius: 22px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .view-hidden { display: none; }
+
+        /* Button Press Effect */
+        .btn-tap {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-tap:active {
+            transform: scale(0.96);
+            background: rgba(255,255,255,0.15);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 flex flex-col items-center">
+
+    <div class="w-full max-w-md">
+        
+        <!-- HOME SCREEN -->
+        <div id="home-screen" class="space-y-8 py-4">
+            
+            <!-- School Identity -->
+            <div class="text-center space-y-1">
+                <h1 class="school-name text-4xl font-extrabold tracking-tight flex flex-col leading-none">
+                    <span class="everest">EVEREST</span>
+                    <span class="academy">ACADEMY</span>
+                    <span class="school">SCHOOL</span>
+                </h1>
+                <p class="text-[10px] text-slate-400 font-bold tracking-[0.25em] pt-1">
+                    GODAWARI 02 ATTARIYA, KAILALI
+                </p>
+            </div>
+
+            <!-- Photo Frame -->
+            <div class="photo-frame glass">
+                <img src="school.png" alt="Everest Academy" onerror="this.src='https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=800&q=80'">
+            </div>
+
+            <!-- Slogan Section -->
+            <div class="text-center px-2">
+                <p class="slogan-text text-xl font-bold italic leading-tight">
+                    "We believe in Modern way of Learning for Deep Knowledge"
+                </p>
+            </div>
+
+            <!-- Class Identifier -->
+            <div class="text-center">
+                <h2 class="text-red-500 font-black text-3xl italic tracking-tighter drop-shadow-lg">
+                    SCIENCE   CLASS  5
+                </h2>
+            </div>
+
+            <!-- Main Categories -->
+            <div class="grid gap-4 pt-2">
+                <button onclick="openCategory('1', 'Scientific Learning')" class="glass p-6 text-xl font-bold flex items-center justify-between btn-tap group">
+                    <span class="group-hover:translate-x-1 transition-transform">Scientific Learning</span>
+                    <div class="bg-blue-500/20 p-2 rounded-xl">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                </button>
+
+                <button onclick="openCategory('2', 'Measurement')" class="glass p-6 text-xl font-bold flex items-center justify-between btn-tap group">
+                    <span class="group-hover:translate-x-1 transition-transform">Measurement</span>
+                    <div class="bg-purple-500/20 p-2 rounded-xl">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- SUBTOPICS SCREEN -->
+        <div id="sub-screen" class="view-hidden space-y-6 py-4">
+            <div class="flex items-center gap-4">
+                <button onclick="goBack()" class="glass p-3 btn-tap">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <h3 id="category-title" class="text-2xl font-bold text-white tracking-tight">Topics</h3>
+            </div>
+
+            <div id="topic-container" class="grid gap-3">
+                <!-- Topics will be injected here -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const studyData = {
+            "1": [
+                "Scientific Learning Process",
+                "Observation",
+                "Experiment lesson 1",
+                "Experiment lesson 2"
+            ],
+            "2": [
+                "Measurement of Mass",
+                "Measurement of volumne"
+            ]
+        };
+
+        const homeView = document.getElementById('home-screen');
+        const subView = document.getElementById('sub-screen');
+        const topicContainer = document.getElementById('topic-container');
+        const categoryTitle = document.getElementById('category-title');
+
+        function openCategory(id, name) {
+            categoryTitle.innerText = name;
+            topicContainer.innerHTML = '';
+            
+            const topics = studyData[id];
+            
+            topics.forEach((topic, index) => {
+                const link = document.createElement('a');
+                // Creating filename exactly as requested: Name + .html
+                link.href = `${id}/${topic}.html`;
+                link.className = `glass p-5 flex items-center justify-between no-underline text-white btn-tap opacity-0 translate-y-4`;
+                link.style.animation = `slideUp 0.4s ease forwards ${index * 0.1}s`;
+                
+                link.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center font-black text-sm text-blue-300">
+                            0${index + 1}
+                        </div>
+                        <span class="font-semibold text-lg">${topic}</span>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                `;
+                topicContainer.appendChild(link);
+            });
+
+            homeView.classList.add('view-hidden');
+            subView.classList.remove('view-hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function goBack() {
+            subView.classList.add('view-hidden');
+            homeView.classList.remove('view-hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+
+    <style>
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body>
+</html>
+
