@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mastering Volume - Class 5 Science</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body { font-family: 'Nunito', sans-serif; background-color: #f1f5f9; overflow-x: hidden; touch-action: pan-y; }
+
+        /* --- 3D BOOK ENGINE --- */
+        .scene {
+            width: 220px;
+            height: 160px;
+            perspective: 800px;
+            margin: 40px auto;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-20deg) rotateY(-30deg);
+            transition: transform 0.5s;
+        }
+
+        .face {
+            position: absolute;
+            border: 2px solid #1e3a8a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            backface-visibility: visible;
+        }
+
+        /* Front & Back are the large covers */
+        .front { width: 220px; height: 160px; background: #3b82f6; color: white; transform: translateZ(var(--h-half)); }
+        .back  { width: 220px; height: 160px; background: #2563eb; transform: rotateY(180deg) translateZ(var(--h-half)); }
+        
+        /* Sides are the "thickness" (The Volume indicator) */
+        .right  { width: var(--h); height: 160px; background: #e2e8f0; right: calc(var(--h-half) * -1); transform: rotateY(90deg); }
+        .left   { width: var(--h); height: 160px; background: #e2e8f0; left: calc(var(--h-half) * -1); transform: rotateY(-90deg); }
+        .top    { width: 220px; height: var(--h); background: #f8fafc; top: calc(var(--h-half) * -1); transform: rotateX(90deg); }
+        .bottom { width: 220px; height: var(--h); background: #f8fafc; bottom: calc(var(--h-half) * -1); transform: rotateX(-90deg); }
+
+        /* --- Displacement Lab --- */
+        #water-level { transition: height 0.8s ease-out; }
+        .glass-cylinder {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- Animations --- */
+        @keyframes bounce-small { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .active-step { border-color: #3b82f6; background-color: #eff6ff; animation: bounce-small 2s infinite; }
+    </style>
+</head>
+<body class="text-gray-800 pb-20">
+
+    <div class="max-w-5xl mx-auto px-4 pt-6 space-y-8">
+        
+        <!-- HEADER -->
+        <div class="text-center bg-white p-6 rounded-3xl shadow-md border-b-4 border-indigo-500">
+            <h1 class="text-3xl md:text-4xl font-black text-indigo-700">Volume & Measurement</h1>
+            <p class="text-xl text-gray-600 font-bold mt-1">(आयतन र यसको नाप)</p>
+            <p class="mt-2 text-sm font-bold text-indigo-400">Science Explorer • Class 5 🔬</p>
+        </div>
+
+        <!-- 1. THE CONCEPT: HEIGHT MAKES VOLUME -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-blue-500">
+            <div class="flex flex-col lg:flex-row items-center gap-10">
+                <div class="flex-1 space-y-4">
+                    <h2 class="text-2xl font-bold text-blue-800 flex items-center">
+                        <span class="text-3xl mr-3">📖</span> 1. The Paper vs Book Secret
+                    </h2>
+                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                        <p class="text-gray-800 font-bold text-lg mb-2">A single paper is 2D (Area). It has no room inside.</p>
+                        <p class="text-blue-900 font-bold leading-relaxed">But when you stack papers, you create **HEIGHT**. Height gives an object "Room" to occupy space. This is Volume!</p>
+                        <div class="h-px bg-blue-200 my-4"></div>
+                        <p class="text-blue-800 font-bold text-sm italic">एउटा कागजको उचाइ हुँदैन, तर धेरै कागज मिल्दा उचाइ बन्छ र त्यसले ठाउँ ओगट्छ।</p>
+                    </div>
+                </div>
+
+                <!-- 3D CUBE SIMULATION -->
+                <div class="w-full lg:w-96 bg-slate-50 rounded-3xl border-2 border-slate-200 p-6 flex flex-col items-center shadow-inner relative overflow-hidden">
+                    <p class="absolute top-2 text-[10px] font-black text-slate-400 uppercase tracking-tighter">True 3D Visualization</p>
+                    
+                    <div class="scene" id="book-scene">
+                        <div class="cube" id="book-cube" style="--h: 2px; --h-half: 1px;">
+                            <div class="face front flex-col">
+                                <span class="text-[10px] font-bold">SCIENCE</span>
+                                <span class="text-2xl font-black">BOOK</span>
+                            </div>
+                            <div class="face back"></div>
+                            <div class="face right"></div>
+                            <div class="face left"></div>
+                            <div class="face top"></div>
+                            <div class="face bottom"></div>
+                        </div>
+                    </div>
+
+                    <div class="w-full space-y-3 mt-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-black text-blue-600 uppercase">Adjust Height (उचाइ):</span>
+                            <span id="height-val" class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">1 mm</span>
+                        </div>
+                        <input type="range" min="1" max="80" value="1" class="w-full h-3 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updateBookHeight(this.value)">
+                    </div>
+                    
+                    <div class="mt-4 flex gap-2 w-full">
+                        <div class="flex-1 bg-white p-2 rounded-lg text-center shadow-sm border">
+                            <p class="text-[10px] font-bold text-gray-400">State:</p>
+                            <p id="book-state" class="text-xs font-black text-red-500">Flat Paper</p>
+                        </div>
+                        <div class="flex-1 bg-white p-2 rounded-lg text-center shadow-sm border">
+                            <p class="text-[10px] font-bold text-gray-400">Volume:</p>
+                            <p id="book-vol-status" class="text-xs font-black text-red-500">None ❌</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. METHODS OF MEASUREMENT LAB -->
+        <section class="bg-slate-900 rounded-3xl shadow-2xl p-6 md:p-8 border-t-8 border-emerald-400 text-white">
+            <h2 class="text-2xl font-bold text-emerald-400 mb-6 flex items-center">
+                <span class="text-3xl mr-3">🧪</span> 2. Measurement Methods (नाप्ने तरिकाहरू)
+            </h2>
+
+            <!-- Toggle Tabs -->
+            <div class="flex bg-slate-800 p-1 rounded-2xl mb-8 border border-slate-700">
+                <button onclick="switchTab('regular')" id="tab-reg" class="flex-1 py-3 rounded-xl font-black text-sm transition-all bg-emerald-600 text-white shadow-lg">
+                    Regular Objects (नियमित वस्तु)
+                </button>
+                <button onclick="switchTab('irregular')" id="tab-irreg" class="flex-1 py-3 rounded-xl font-black text-sm transition-all text-slate-400 hover:text-white">
+                    Irregular Objects (अनियमित वस्तु)
+                </button>
+            </div>
+
+            <!-- METHOD A: REGULAR (FORMULA) -->
+            <div id="method-regular" class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-4">
+                        <p class="text-lg font-bold leading-relaxed text-emerald-100">For objects like boxes or books, we use a ruler and a formula!</p>
+                        <div class="bg-emerald-950/50 p-6 rounded-2xl border-2 border-emerald-500/30 text-center">
+                            <p class="text-xs font-black text-emerald-400 mb-2 uppercase">The Formula:</p>
+                            <p class="text-4xl font-black text-white">V = L × B × H</p>
+                            <div class="h-px bg-emerald-500/30 my-4"></div>
+                            <p class="text-sm font-bold text-emerald-200">Volume = Length × Width × Height</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex flex-col items-center">
+                        <svg viewBox="0 0 200 150" class="w-48 h-auto drop-shadow-2xl">
+                            <!-- Simple Isometric Cube for Formula Demo -->
+                            <path d="M 50 100 L 150 100 L 180 70 L 80 70 Z" fill="#065f46" stroke="#10b981" stroke-width="2"/>
+                            <path d="M 50 100 L 50 50 L 150 50 L 150 100" fill="none" stroke="#10b981" stroke-width="2"/>
+                            <path d="M 150 100 L 180 70 L 180 20 L 150 50 Z" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+                            <path d="M 50 50 L 80 20 L 180 20 L 150 50 Z" fill="#047857" stroke="#10b981" stroke-width="2"/>
+                            <!-- Labels -->
+                            <text x="100" y="120" fill="#10b981" font-size="12" font-weight="bold" text-anchor="middle">Length (L)</text>
+                            <text x="175" y="95" fill="#10b981" font-size="12" font-weight="bold" transform="rotate(-45, 175, 95)">Width (W)</text>
+                            <text x="30" y="75" fill="#10b981" font-size="12" font-weight="bold">Height (H)</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METHOD B: IRREGULAR (DISPLACEMENT) -->
+            <div id="method-irregular" class="hidden space-y-6">
+                <p class="text-center font-bold text-blue-200 mb-4">How to measure a stone? It has no straight sides! We use water displacement.</p>
+                <div class="flex flex-col lg:flex-row gap-8 items-center justify-center">
+                    <!-- Cylinder -->
+                    <div class="relative w-32 h-[350px] flex flex-col items-center">
+                        <div class="absolute left-[-45px] top-[10px] h-[300px] flex flex-col-reverse justify-between text-[9px] font-black text-blue-400">
+                            <span>0 ml</span><span>10 ml</span><span>20 ml</span><span>30 ml</span><span>40 ml</span><span>50 ml</span><span>60 ml</span>
+                        </div>
+                        <div class="relative w-24 h-[300px] border-x-4 border-b-4 border-blue-400/30 rounded-b-xl glass-cylinder overflow-hidden z-10">
+                            <div id="water-level" class="absolute bottom-0 left-0 w-full bg-blue-500/60 border-t-2 border-blue-200" style="height: 100px;"></div>
+                            <div id="lab-stone" class="absolute bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 transition-all duration-1000 z-20">
+                                <span class="text-3xl">🪨</span>
+                            </div>
+                        </div>
+                        <div class="w-32 h-3 bg-slate-700 rounded-full mt-[-2px]"></div>
+                    </div>
+
+                    <!-- Readout -->
+                    <div class="flex-1 w-full max-w-sm space-y-4">
+                        <div class="bg-black/40 p-5 rounded-2xl border border-blue-500/30">
+                            <div class="flex justify-between mb-4">
+                                <div class="text-center">
+                                    <p class="text-[10px] font-bold text-gray-400">INITIAL ($V_1$)</p>
+                                    <p class="text-xl font-black" id="v1-text">20 ml</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-[10px] font-bold text-gray-400">FINAL ($V_2$)</p>
+                                    <p class="text-xl font-black" id="v2-text">20 ml</p>
+                                </div>
+                            </div>
+                            <div class="text-center border-t border-slate-700 pt-3">
+                                <p class="text-xs font-bold text-yellow-400">Stone Volume:</p>
+                                <p class="text-4xl font-black text-yellow-300" id="v-res">0 <small class="text-lg">ml</small></p>
+                            </div>
+                        </div>
+                        <button onclick="runDisplacement()" id="test-btn" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-black shadow-lg transition-all active:scale-95">
+                            DROP THE STONE! (ढुङ्गा खसाल्नुहोस्)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        // --- 1. 3D Book Logic ---
+        function updateBookHeight(val) {
+            const height = parseInt(val);
+            const cube = document.getElementById('book-cube');
+            const hVal = document.getElementById('height-val');
+            const state = document.getElementById('book-state');
+            const status = document.getElementById('book-vol-status');
+
+            // Set CSS variables for 3D engine
+            cube.style.setProperty('--h', `${height}px`);
+            cube.style.setProperty('--h-half', `${height / 2}px`);
+
+            hVal.innerText = height + " mm";
+
+            if (height <= 2) {
+                state.innerText = "Flat Paper"; state.className = "text-xs font-black text-gray-500";
+                status.innerText = "None ❌"; status.className = "text-xs font-black text-red-500";
+                cube.parentElement.style.transform = "scale(1)";
+            } else {
+                state.innerText = "3D Book"; state.className = "text-xs font-black text-blue-600";
+                status.innerText = "Has Volume ✅"; status.className = "text-xs font-black text-green-600";
+                // Add a little dynamic scale as it grows
+                cube.parentElement.style.transform = `scale(${1 + (height/300)})`;
+            }
+        }
+
+        // --- 2. Tab Switching Logic ---
+        function switchTab(type) {
+            const reg = document.getElementById('method-regular');
+            const irreg = document.getElementById('method-irregular');
+            const tabReg = document.getElementById('tab-reg');
+            const tabIrreg = document.getElementById('tab-irreg');
+
+            if (type === 'regular') {
+                reg.classList.remove('hidden'); irreg.classList.add('hidden');
+                tabReg.className = "flex-1 py-3 rounded-xl font-black text-sm bg-emerald-600 text-white shadow-lg";
+                tabIrreg.className = "flex-1 py-3 rounded-xl font-black text-sm text-slate-400 hover:text-white";
+            } else {
+                irreg.classList.remove('hidden'); reg.classList.add('hidden');
+                tabIrreg.className = "flex-1 py-3 rounded-xl font-black text-sm bg-blue-600 text-white shadow-lg";
+                tabReg.className = "flex-1 py-3 rounded-xl font-black text-sm text-slate-400 hover:text-white";
+            }
+        }
+
+        // --- 3. Displacement Lab Logic ---
+        let displaced = false;
+        function runDisplacement() {
+            if (displaced) {
+                // Reset
+                displaced = false;
+                document.getElementById('water-level').style.height = '100px';
+                document.getElementById('lab-stone').style.opacity = '0';
+                document.getElementById('lab-stone').style.transform = 'translate(-50%, -100px)';
+                document.getElementById('v2-text').innerText = '20 ml';
+                document.getElementById('v-res').innerText = '0';
+                document.getElementById('test-btn').innerText = 'DROP THE STONE!';
+                return;
+            }
+
+            displaced = true;
+            const stone = document.getElementById('lab-stone');
+            const water = document.getElementById('water-level');
+            const v2Text = document.getElementById('v2-text');
+            const vRes = document.getElementById('v-res');
+
+            // Drop Animation
+            stone.style.opacity = '1';
+            stone.style.transform = 'translate(-50%, 0)';
+            
+            setTimeout(() => {
+                // Rise water (20ml -> 35ml)
+                water.style.height = '175px';
+                
+                // Animate Numbers
+                let v = 20;
+                const timer = setInterval(() => {
+                    v++;
+                    v2Text.innerText = v + ' ml';
+                    vRes.innerText = (v - 20);
+                    if (v >= 35) {
+                        clearInterval(timer);
+                        document.getElementById('test-btn').innerText = 'RESET LABORATORY';
+                    }
+                }, 40);
+            }, 500);
+        }
+
+        // Init
+        updateBookHeight(1);
+    </script>
+</body>
+</html>
+
+

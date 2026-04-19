@@ -1,0 +1,599 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Measurement of Mass - Science Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body { 
+            font-family: 'Nunito', sans-serif; 
+            background-color: #f8fafc; 
+            overflow-x: hidden; 
+            touch-action: pan-y; /* Prevent pinch zoom, allow vertical scroll when not dragging */
+        }
+
+        /* --- Physics Scale Styles --- */
+        #scale-container {
+            perspective: 1000px;
+        }
+
+        .beam {
+            transform-origin: center center;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            will-change: transform;
+        }
+
+        .hanger {
+            transform-origin: top center;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            will-change: transform;
+        }
+
+        .pan {
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.2), 0 10px 15px rgba(0,0,0,0.3);
+        }
+
+        /* --- Drag and Drop Styles --- */
+        .draggable {
+            touch-action: none; /* Crucial for touch dragging */
+            cursor: grab;
+            user-select: none;
+            will-change: transform, left, top;
+            z-index: 20;
+            transition: transform 0.2s;
+        }
+        
+        .draggable:active { cursor: grabbing; }
+        .draggable * { pointer-events: none; } /* Pass events to wrapper */
+        
+        .dragging {
+            z-index: 50 !important;
+            opacity: 0.95;
+            transform: scale(1.1) !important;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.2);
+            transition: none !important;
+        }
+
+        /* Pulse effects */
+        @keyframes pulse-border {
+            0% { border-color: rgba(34, 197, 94, 0.4); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { border-color: rgba(34, 197, 94, 1); box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+            100% { border-color: rgba(34, 197, 94, 0.4); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        .highlight-drop { animation: pulse-border 1.5s infinite; }
+
+        @keyframes success-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .anim-pop { animation: success-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        .shake-err { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
+
+        /* Confetti */
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+    </style>
+</head>
+<body class="text-gray-800 pb-16">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="max-w-5xl mx-auto px-4 pt-6 space-y-8">
+        
+        <!-- Header -->
+        <div class="text-center bg-white p-6 rounded-3xl shadow-md border-b-4 border-indigo-500">
+            <h1 class="text-3xl md:text-4xl font-black text-indigo-700">Measurement of Mass</h1>
+            <p class="text-xl text-gray-600 font-bold mt-1">(पिण्डको नाप)</p>
+            <p class="mt-2 text-sm font-bold text-indigo-400">Class 5 Science 🎒</p>
+        </div>
+
+        <!-- 1. DEFINITION SECTION -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-blue-500 flex flex-col md:flex-row items-center gap-6">
+            <div class="flex-1">
+                <h2 class="text-2xl font-bold text-blue-800 mb-3 flex items-center">
+                    <span class="text-3xl mr-3">🍎</span> 1. What is Mass?
+                </h2>
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <p class="text-gray-800 font-bold text-lg mb-2">Mass is the amount of matter (stuff) inside an object.</p>
+                    <p class="text-gray-600 font-bold mb-3">We measure mass by comparing it with standard weights using a Balance Scale.</p>
+                    <div class="w-full h-px bg-blue-200 my-2"></div>
+                    <p class="text-blue-900 font-bold text-md">कुनै वस्तुमा रहेको पदार्थको परिमाणलाई पिण्ड भनिन्छ। पिण्ड नाप्नको लागि हामी तराजु र ढकको प्रयोग गर्छौं।</p>
+                </div>
+            </div>
+            <div class="w-full md:w-1/3 bg-slate-100 p-4 rounded-2xl text-center border-2 border-slate-200 shadow-inner">
+                <p class="text-4xl mb-2">⚖️</p>
+                <p class="font-black text-slate-700">Units of Mass</p>
+                <div class="mt-2 grid grid-cols-2 gap-2 text-sm font-bold">
+                    <div class="bg-white p-2 rounded shadow text-indigo-600">Kilogram (kg)</div>
+                    <div class="bg-white p-2 rounded shadow text-teal-600">Gram (g)</div>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">1 kg = 1000 g</p>
+            </div>
+        </section>
+
+        <!-- 2. SIMULATION: THE BEAM BALANCE -->
+        <section class="bg-slate-800 rounded-3xl shadow-2xl p-4 md:p-8 border-t-8 border-emerald-500 text-white relative overflow-hidden" id="sim-area">
+            <h2 class="text-2xl font-bold text-emerald-400 mb-2 flex items-center relative z-10">
+                <span class="text-3xl mr-3">⚖️</span> 2. The Balance Scale (भौतिक तराजु)
+            </h2>
+            <p class="text-gray-300 font-bold mb-6 text-sm relative z-10">Drag an object to the left pan, and weights to the right pan to find its mass! (वस्तुलाई देब्रे पल्लामा र ढकलाई दाहिने पल्लामा राख्नुहोस्!)</p>
+
+            <!-- Feedback Screen -->
+            <div class="mx-auto max-w-sm bg-slate-900 border-4 border-slate-700 rounded-xl p-3 mb-8 text-center shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] relative z-10 flex flex-col justify-center h-24">
+                <h3 id="scale-status-en" class="font-black text-xl text-yellow-400 tracking-wide uppercase">Scale is Empty</h3>
+                <p id="scale-status-np" class="text-sm font-bold text-gray-400 mt-1">तराजु खाली छ</p>
+            </div>
+
+            <!-- THE SCALE PHYSICS UI -->
+            <div id="scale-container" class="relative w-full h-[350px] sm:h-[400px] flex justify-center mb-8 bg-gradient-to-b from-slate-700 to-slate-800 rounded-3xl border border-slate-600 overflow-hidden shadow-inner">
+                
+                <!-- Central Stand -->
+                <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-4/5 bg-gradient-to-t from-gray-900 via-gray-600 to-gray-400 rounded-t-full border-x-2 border-gray-900 z-10 flex flex-col items-center">
+                    <div class="w-14 h-6 bg-gray-500 mt-6 rounded shadow-lg border-2 border-gray-800"></div>
+                    <div class="w-4 h-[80%] bg-gray-800 mt-2 rounded shadow-inner border-x border-gray-900"></div>
+                </div>
+                <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-48 h-6 bg-gradient-to-t from-gray-900 to-gray-700 border-t-2 border-gray-500 rounded-t-xl z-0"></div>
+
+                <!-- Central Pivot Mechanism -->
+                <div class="absolute top-[20%] sm:top-[25%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-yellow-600 to-yellow-800 rounded-full border-4 border-gray-800 z-30 flex items-center justify-center shadow-2xl">
+                    <div class="w-4 h-4 bg-gray-300 rounded-full shadow-inner border border-gray-500"></div>
+                </div>
+
+                <!-- BEAM AND PANS (The Moving Part) -->
+                <!-- Note: CSS transform variables handle the counter-rotation so pans stay upright -->
+                <div id="beam" class="beam absolute top-[20%] sm:top-[25%] w-[85%] sm:w-[70%] max-w-[600px] h-5 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 rounded-full border-2 border-yellow-800 shadow-xl z-20 flex justify-between px-3 items-center" style="transform: rotate(0deg);">
+                    
+                    <!-- Left Hanger & Pan (Objects) -->
+                    <div id="hanger-left" class="hanger relative w-0 h-0" style="transform: rotate(0deg);">
+                        <!-- Beam Attachment Loop -->
+                        <div class="absolute top-[-8px] left-[-10px] w-5 h-5 border-4 border-yellow-800 rounded-full bg-transparent shadow-inner"></div>
+                        
+                        <!-- Realistic SVG Hook and Ropes -->
+                        <svg class="absolute top-[3px] left-[-50px] w-[100px] h-[150px] z-0 pointer-events-none" viewBox="0 0 100 150">
+                            <!-- Metal Hook -->
+                            <path d="M 50 0 C 60 0, 65 10, 50 20 C 45 25, 45 30, 50 35" fill="none" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+                            <!-- Connecting Ring -->
+                            <circle cx="50" cy="35" r="4" fill="none" stroke="#64748b" stroke-width="3" />
+                            <!-- Triangle Strings -->
+                            <line x1="50" y1="39" x2="8" y2="150" stroke="#cbd5e1" stroke-width="2" />
+                            <line x1="50" y1="39" x2="50" y2="150" stroke="#cbd5e1" stroke-width="2" />
+                            <line x1="50" y1="39" x2="92" y2="150" stroke="#cbd5e1" stroke-width="2" />
+                        </svg>
+
+                        <!-- Pan Base -->
+                        <div class="absolute top-[150px] left-[-50px] w-[100px] h-[16px] bg-gradient-to-b from-slate-200 to-slate-400 rounded-b-xl pan z-10 flex flex-col items-center justify-end pb-1 border-2 border-slate-500 shadow-md">
+                            <span class="text-[9px] text-slate-700 font-black tracking-wider">OBJECT</span>
+                        </div>
+                        <!-- Hitbox Dropzone for JS -->
+                        <div id="dropzone-left" class="absolute top-[30px] left-[-50px] w-[100px] h-[120px] bg-blue-500/10 border-2 border-dashed border-transparent rounded-xl z-20 transition-colors"></div>
+                        <!-- Item Holder (where dragged items snap to) -->
+                        <div id="holder-left" class="absolute top-[150px] left-[-40px] w-[80px] h-0 flex flex-col-reverse items-center z-30"></div>
+                    </div>
+
+                    <!-- Right Hanger & Pan (Weights) -->
+                    <div id="hanger-right" class="hanger relative w-0 h-0" style="transform: rotate(0deg);">
+                        <!-- Beam Attachment Loop -->
+                        <div class="absolute top-[-8px] left-[-10px] w-5 h-5 border-4 border-yellow-800 rounded-full bg-transparent shadow-inner"></div>
+                        
+                        <!-- Realistic SVG Hook and Ropes -->
+                        <svg class="absolute top-[3px] left-[-50px] w-[100px] h-[150px] z-0 pointer-events-none" viewBox="0 0 100 150">
+                            <!-- Metal Hook -->
+                            <path d="M 50 0 C 60 0, 65 10, 50 20 C 45 25, 45 30, 50 35" fill="none" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+                            <!-- Connecting Ring -->
+                            <circle cx="50" cy="35" r="4" fill="none" stroke="#64748b" stroke-width="3" />
+                            <!-- Triangle Strings -->
+                            <line x1="50" y1="39" x2="8" y2="150" stroke="#cbd5e1" stroke-width="2" />
+                            <line x1="50" y1="39" x2="50" y2="150" stroke="#cbd5e1" stroke-width="2" />
+                            <line x1="50" y1="39" x2="92" y2="150" stroke="#cbd5e1" stroke-width="2" />
+                        </svg>
+
+                        <!-- Pan Base -->
+                        <div class="absolute top-[150px] left-[-50px] w-[100px] h-[16px] bg-gradient-to-b from-slate-200 to-slate-400 rounded-b-xl pan z-10 flex flex-col items-center justify-end pb-1 border-2 border-slate-500 shadow-md">
+                            <span class="text-[9px] text-slate-700 font-black tracking-wider">WEIGHTS</span>
+                        </div>
+                        <!-- Hitbox Dropzone for JS -->
+                        <div id="dropzone-right" class="absolute top-[30px] left-[-50px] w-[100px] h-[120px] bg-green-500/10 border-2 border-dashed border-transparent rounded-xl z-20 transition-colors"></div>
+                        <!-- Item Holder (where dragged weights stack) -->
+                        <div id="holder-right" class="absolute top-[150px] left-[-40px] w-[80px] h-0 flex flex-col-reverse items-center gap-1 z-30"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SHELVES FOR DRAGGABLE ITEMS -->
+            <div class="flex flex-col md:flex-row gap-6">
+                
+                <!-- Objects Shelf (Left) -->
+                <div class="flex-1 bg-slate-700 rounded-2xl p-4 border border-slate-600 shadow-inner">
+                    <h3 class="text-blue-300 font-black text-center mb-2 border-b border-slate-500 pb-2">Objects (वस्तुहरू)</h3>
+                    <div class="flex justify-center gap-4 py-2" id="shelf-objects">
+                        
+                        <!-- Draggable Apple (150g) -->
+                        <div class="draggable relative flex flex-col items-center justify-center w-16 h-16 bg-white rounded-full shadow-lg border-2 border-gray-200" data-type="object" data-mass="150">
+                            <span class="text-4xl leading-none" style="transform: translateY(2px);">🍎</span>
+                        </div>
+
+                        <!-- Draggable Book (300g) -->
+                        <div class="draggable relative flex flex-col items-center justify-center w-16 h-16 bg-blue-500 rounded-lg shadow-lg border-2 border-blue-300" data-type="object" data-mass="300">
+                            <span class="text-3xl leading-none">📘</span>
+                        </div>
+
+                        <!-- Draggable Gold (500g) -->
+                        <div class="draggable relative flex flex-col items-center justify-center w-16 h-16 bg-yellow-400 rounded-sm shadow-lg border-2 border-yellow-200" data-type="object" data-mass="500">
+                            <span class="text-3xl leading-none">🧱</span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Weights Shelf (Right) -->
+                <div class="flex-1 bg-slate-700 rounded-2xl p-4 border border-slate-600 shadow-inner">
+                    <div class="flex justify-between items-center mb-2 border-b border-slate-500 pb-2">
+                        <h3 class="text-emerald-300 font-black">Standard Weights (ढक)</h3>
+                        <button onclick="clearWeights()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded shadow transition">Clear (हटाउनुहोस्)</button>
+                    </div>
+                    
+                    <div class="flex justify-center gap-3 py-2 flex-wrap" id="shelf-weights">
+                        <!-- Weights are cloned from these sources -->
+                        <div class="draggable weight-source relative flex flex-col items-center justify-center w-12 h-10 bg-gradient-to-b from-gray-300 to-gray-500 rounded shadow-xl border border-gray-600" data-type="weight" data-mass="500">
+                            <div class="w-4 h-2 bg-gray-400 absolute top-[-6px] rounded-t-full"></div>
+                            <span class="text-[11px] font-black text-gray-900 drop-shadow-sm">500g</span>
+                        </div>
+                        
+                        <div class="draggable weight-source relative flex flex-col items-center justify-center w-10 h-10 bg-gradient-to-b from-gray-300 to-gray-500 rounded shadow-xl border border-gray-600" data-type="weight" data-mass="200">
+                            <div class="w-3 h-2 bg-gray-400 absolute top-[-6px] rounded-t-full"></div>
+                            <span class="text-[10px] font-black text-gray-900 drop-shadow-sm">200g</span>
+                        </div>
+                        
+                        <div class="draggable weight-source relative flex flex-col items-center justify-center w-10 h-8 bg-gradient-to-b from-gray-300 to-gray-500 rounded shadow-xl border border-gray-600" data-type="weight" data-mass="100">
+                            <div class="w-3 h-2 bg-gray-400 absolute top-[-6px] rounded-t-full"></div>
+                            <span class="text-[10px] font-black text-gray-900 drop-shadow-sm">100g</span>
+                        </div>
+
+                        <div class="draggable weight-source relative flex flex-col items-center justify-center w-8 h-8 bg-gradient-to-b from-gray-300 to-gray-500 rounded shadow-xl border border-gray-600" data-type="weight" data-mass="50">
+                            <div class="w-2 h-2 bg-gray-400 absolute top-[-6px] rounded-t-full"></div>
+                            <span class="text-[9px] font-black text-gray-900 drop-shadow-sm">50g</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 3. KEY VOCABULARY -->
+        <section class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-teal-500">
+            <h2 class="text-2xl font-bold text-teal-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📚</span> 3. Key Words (मुख्य शब्दहरू)
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                    <h4 class="font-black text-teal-900 text-lg">Mass (पिण्ड)</h4>
+                    <p class="text-sm text-teal-700 font-bold mt-2">The amount of matter inside an object.</p>
+                    <div class="h-px bg-teal-200 my-2"></div>
+                    <p class="text-xs text-teal-800 font-bold">कुनै वस्तुमा रहेको पदार्थको परिमाण।</p>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                    <h4 class="font-black text-teal-900 text-lg">Beam Balance</h4>
+                    <p class="text-sm text-teal-700 font-bold mt-2">The tool used to measure mass.</p>
+                    <div class="h-px bg-teal-200 my-2"></div>
+                    <p class="text-xs text-teal-800 font-bold">(भौतिक तराजु): पिण्ड नाप्ने उपकरण।</p>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                    <h4 class="font-black text-teal-900 text-lg">Standard Weight</h4>
+                    <p class="text-sm text-teal-700 font-bold mt-2">Known blocks of mass (like 1kg, 500g).</p>
+                    <div class="h-px bg-teal-200 my-2"></div>
+                    <p class="text-xs text-teal-800 font-bold">(ढक): नाप्न प्रयोग गरिने निश्चित पिण्ड।</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- AUDIO AND LOGIC SCRIPT -->
+    <script>
+        // --- Web Audio API Synth Engine ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'clunk') {
+                // Drop sound
+                osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'pop') {
+                // Remove sound
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'success') {
+                // Balanced!
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now); // C5
+                const osc2 = audioCtx.createOscillator(); osc2.type = 'triangle'; osc2.frequency.setValueAtTime(659.25, now); // E5
+                osc2.connect(gain);
+                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.4, now + 0.1); gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+                osc.start(now); osc2.start(now); osc.stop(now + 1.5); osc2.stop(now + 1.5);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, now);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        }
+
+        // --- Physics Engine & State ---
+        let leftMass = 0;
+        let rightMass = 0;
+        let activeObject = null; // Can only hold 1 object on left
+        let activeWeights = [];  // Array of elements on right pan
+
+        const beam = document.getElementById('beam');
+        const hangerL = document.getElementById('hanger-left');
+        const hangerR = document.getElementById('hanger-right');
+        
+        const statusEn = document.getElementById('scale-status-en');
+        const statusNp = document.getElementById('scale-status-np');
+        const feedbackScreen = statusEn.parentElement;
+
+        function updateScale() {
+            // Calculate tilt angle based on mass difference
+            const difference = leftMass - rightMass;
+            
+            // Sensitivity: how many degrees per gram? 
+            // Max tilt is capped at ~20 degrees for visual realism
+            let angle = difference * 0.08; 
+            if (angle > 20) angle = 20;
+            if (angle < -20) angle = -20;
+
+            // Apply rotations
+            beam.style.transform = `rotate(${angle}deg)`;
+            // Counter-rotate hangers so they always hang straight down
+            hangerL.style.transform = `rotate(${-angle}deg)`;
+            hangerR.style.transform = `rotate(${-angle}deg)`;
+
+            // Update UI Feedback
+            feedbackScreen.classList.remove('border-green-500', 'border-red-500', 'border-slate-700', 'anim-pop');
+            statusEn.classList.remove('text-green-400', 'text-red-400', 'text-yellow-400');
+            
+            if (leftMass === 0 && rightMass === 0) {
+                statusEn.innerText = "Scale is Empty";
+                statusNp.innerText = "तराजु खाली छ";
+                statusEn.classList.add('text-yellow-400');
+                feedbackScreen.classList.add('border-slate-700');
+            } else if (leftMass === rightMass) {
+                statusEn.innerText = `BALANCED! Mass = ${leftMass}g`;
+                statusNp.innerText = `सन्तुलित! पिण्ड = ${leftMass}g`;
+                statusEn.classList.add('text-green-400');
+                feedbackScreen.classList.add('border-green-500', 'anim-pop');
+                playSound('success');
+                fireConfetti();
+            } else if (leftMass > rightMass) {
+                statusEn.innerText = "Add more weights!";
+                statusNp.innerText = "दायाँ पल्लामा अझै ढक थप्नुहोस्!";
+                statusEn.classList.add('text-red-400');
+                feedbackScreen.classList.add('border-red-500');
+            } else {
+                statusEn.innerText = "Too much weight!";
+                statusNp.innerText = "तौल धेरै भयो, ढक हटाउनुहोस्!";
+                statusEn.classList.add('text-red-400');
+                feedbackScreen.classList.add('border-red-500');
+            }
+        }
+
+        function clearWeights() {
+            playSound('pop');
+            activeWeights.forEach(el => el.remove());
+            activeWeights = [];
+            rightMass = 0;
+            updateScale();
+        }
+
+        // --- Drag and Drop Engine (Touch + Mouse) ---
+        function initDragDrop() {
+            const draggables = document.querySelectorAll('.draggable');
+            const dropL = document.getElementById('dropzone-left');
+            const dropR = document.getElementById('dropzone-right');
+            const holderL = document.getElementById('holder-left');
+            const holderR = document.getElementById('holder-right');
+            const shelfObj = document.getElementById('shelf-objects');
+
+            draggables.forEach(item => {
+                
+                function handleStart(e) {
+                    if (e.target.closest('#holder-left') || e.target.closest('#holder-right')) return; // Don't drag once placed (simplifies logic)
+                    
+                    let isSource = item.classList.contains('weight-source');
+                    let activeItem = item;
+
+                    // If it's a weight source, clone it for dragging
+                    if (isSource) {
+                        activeItem = item.cloneNode(true);
+                        activeItem.classList.remove('weight-source');
+                        document.body.appendChild(activeItem);
+                    }
+
+                    // For objects, we move the actual element
+                    const rect = (isSource ? item : activeItem).getBoundingClientRect();
+                    const point = getEventPos(e);
+                    let offsetX = point.x - rect.left;
+                    let offsetY = point.y - rect.top;
+
+                    activeItem.style.position = 'fixed';
+                    activeItem.style.width = `${rect.width}px`;
+                    activeItem.style.left = `${rect.left}px`;
+                    activeItem.style.top = `${rect.top}px`;
+                    activeItem.classList.add('dragging');
+                    
+                    // Highlight valid dropzones
+                    if (activeItem.dataset.type === 'object') {
+                        dropL.classList.add('highlight-drop', 'border-blue-400');
+                    } else {
+                        dropR.classList.add('highlight-drop', 'border-green-400');
+                    }
+
+                    function handleMove(ev) {
+                        ev.preventDefault(); // Stop scrolling
+                        const p = getEventPos(ev);
+                        activeItem.style.left = `${p.x - offsetX}px`;
+                        activeItem.style.top = `${p.y - offsetY}px`;
+                    }
+
+                    function handleEnd(ev) {
+                        const itemRect = activeItem.getBoundingClientRect();
+                        const cx = itemRect.left + itemRect.width/2;
+                        const cy = itemRect.top + itemRect.height/2;
+                        const type = activeItem.dataset.type;
+                        const mass = parseInt(activeItem.dataset.mass);
+
+                        // Remove highlights
+                        dropL.classList.remove('highlight-drop', 'border-blue-400');
+                        dropR.classList.remove('highlight-drop', 'border-green-400');
+
+                        let dropped = false;
+
+                        if (type === 'object' && checkCollide(cx, cy, dropL)) {
+                            // Drop Object on Left Pan
+                            if (activeObject) {
+                                // Return existing object to shelf
+                                activeObject.style.position = 'relative';
+                                activeObject.style.left = '0';
+                                activeObject.style.top = '0';
+                                activeObject.style.transform = 'translateY(0)';
+                                shelfObj.appendChild(activeObject);
+                            }
+                            playSound('clunk');
+                            activeItem.style.position = 'relative';
+                            activeItem.style.left = '0';
+                            activeItem.style.top = '0';
+                            // Slightly adjust transform to sit nicely on pan
+                            activeItem.style.transform = 'translateY(15px)'; 
+                            holderL.innerHTML = ''; // clear holder
+                            holderL.appendChild(activeItem);
+                            activeObject = activeItem;
+                            leftMass = mass;
+                            dropped = true;
+                        } 
+                        else if (type === 'weight' && checkCollide(cx, cy, dropR)) {
+                            // Drop Weight on Right Pan
+                            playSound('clunk');
+                            activeItem.style.position = 'relative';
+                            activeItem.style.left = '0';
+                            activeItem.style.top = '0';
+                            holderR.appendChild(activeItem);
+                            activeWeights.push(activeItem);
+                            rightMass += mass;
+                            dropped = true;
+                        }
+
+                        if (dropped) {
+                            // Success
+                            activeItem.classList.remove('dragging');
+                            updateScale();
+                        } else {
+                            // Failed drop
+                            playSound('error');
+                            if (isSource) {
+                                activeItem.remove(); // Delete clone
+                            } else {
+                                // Return object to shelf
+                                activeItem.classList.remove('dragging');
+                                activeItem.classList.add('shake-err');
+                                activeItem.style.position = 'relative';
+                                activeItem.style.left = '0';
+                                activeItem.style.top = '0';
+                                setTimeout(() => activeItem.classList.remove('shake-err'), 400);
+                            }
+                        }
+
+                        // Cleanup listeners
+                        document.removeEventListener('mousemove', handleMove);
+                        document.removeEventListener('mouseup', handleEnd);
+                        document.removeEventListener('touchmove', handleMove);
+                        document.removeEventListener('touchend', handleEnd);
+                    }
+
+                    document.addEventListener('mousemove', handleMove, {passive: false});
+                    document.addEventListener('mouseup', handleEnd);
+                    document.addEventListener('touchmove', handleMove, {passive: false});
+                    document.addEventListener('touchend', handleEnd);
+                }
+
+                item.addEventListener('mousedown', handleStart);
+                item.addEventListener('touchstart', handleStart, {passive: false});
+            });
+        }
+
+        // Helper: Get touch or mouse coords
+        function getEventPos(e) {
+            if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        // Helper: Check if point (cx, cy) is inside element
+        function checkCollide(x, y, element) {
+            const rect = element.getBoundingClientRect();
+            // Add a generous padding for mobile users (easier to drop)
+            const pad = 40; 
+            return (x > rect.left - pad && x < rect.right + pad && y > rect.top - pad && y < rect.bottom + pad);
+        }
+
+        // --- Confetti Engine ---
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const particles = [];
+            const colors = ['#fde047', '#3b82f6', '#ef4444', '#10b981', '#a855f7'];
+
+            for(let i=0; i<80; i++) {
+                particles.push({
+                    x: canvas.width / 2, y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 1) * 15 - 5,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * 360, rotSpeed: (Math.random() - 0.5) * 10
+                });
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+                particles.forEach(p => {
+                    p.vy += 0.3; p.x += p.vx; p.y += p.vy; p.rot += p.rotSpeed;
+                    if(p.y < canvas.height) active = true;
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+                    ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); ctx.restore();
+                });
+                if(active) requestAnimationFrame(render);
+                else ctx.clearRect(0,0,canvas.width,canvas.height);
+            }
+            render();
+        }
+
+        // Boot
+        window.onload = () => {
+            initDragDrop();
+            updateScale();
+        };
+    </script>
+</body>
+</html>
+
+
